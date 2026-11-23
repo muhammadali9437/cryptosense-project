@@ -25,9 +25,12 @@ RISK COPILOT:
   Baghair in keys ke specialist status "unavailable" dikhate hain; demo feeds ko live evidence nahi maana jata.
 
 TELEGRAM ALERTS (optional):
-  Telegram BotFather se bot banayein, bot ko apne chat mein start karein, phir backend\.env mein
-  TELEGRAM_BOT_TOKEN aur TELEGRAM_CHAT_ID set karein. Price/risk/portfolio-limit alerts ke saath
-  tracked coins ke bari Binance liquidations aur configured Whale Alert transfers Telegram par aayenge.
+  1. Telegram par @BotFather se /newbot karke bot banayein; naya bot apne personal chat mein /start karein.
+  2. Bot token aur apna chat ID backend\.env mein TELEGRAM_BOT_TOKEN aur TELEGRAM_CHAT_ID ke neeche set karein.
+     Chat ID @userinfobot se mil sakti hai. In values ko chat, README, ya GitHub par share na karein.
+  3. TEST_TELEGRAM.bat chalayein. Ye sirf ek test message bhejta hai aur token ko screen par nahi dikhata.
+  Backend chalta ho to price/risk/portfolio-limit alerts ke saath tracked coins ki bari Binance
+  liquidations aur configured Whale Alert transfers bhi Telegram par aayenge.
   LIQUIDATION_ALERT_USD default $1,000,000 hai. Ek deployment ka ek operator chat configured hota hai.
 
 RAILWAY BACKEND DEPLOYMENT:
