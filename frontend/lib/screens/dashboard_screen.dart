@@ -6,7 +6,7 @@ import '../models/models.dart';
 import '../services/app_scope.dart';
 import '../services/indicators.dart';
 import '../services/market_service.dart';
-import '../services/mock_data.dart';
+import '../services/coins.dart';
 import '../services/sage_brain.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
@@ -96,6 +96,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       listenable: Listenable.merge([market, context.app]),
       builder: (context, _) {
         final t = market.ticker(_symbol);
+        if (t == null) {
+          return PageBody(children: [
+            Panel(
+              title: 'Live market data unavailable',
+              child: Text(
+                'Binance could not be reached, so there are no live prices right now. '
+                'CryptoSense keeps retrying automatically. No made-up prices are shown.',
+                style: AppText.body(14.5, color: AppColors.muted, height: 1.5),
+              ),
+            ),
+            _RiskPanel(symbol: _symbol),
+          ]);
+        }
         final candles = _loading ? _candles : _withLivePrice(t);
         return PageBody(children: [
           _MarketRead(
@@ -125,7 +138,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Center(
                               child: CircularProgressIndicator(strokeWidth: 2)),
                         )
-                      : CandleChart(candles: candles),
+                      : candles.isEmpty
+                          ? SizedBox(
+                              height: 352,
+                              child: Center(
+                                child: Text(
+                                  'Binance candle data is unavailable right now. '
+                                  'No made-up candles are shown.',
+                                  textAlign: TextAlign.center,
+                                  style: AppText.body(14, color: AppColors.muted),
+                                ),
+                              ),
+                            )
+                          : CandleChart(candles: candles),
                   const SizedBox(height: 18),
                   _StatStrip(ticker: t, candles: candles, interval: _interval),
                 ],
@@ -370,7 +395,7 @@ class _SignalsPanel extends StatelessWidget {
                 child: _SignalTile(signal: s)),
           if (!context.app.signalsLive)
             const DemoNote(
-                'Demo signals. Start the backend (uvicorn) to see the trained models.'),
+                'AI signals unavailable. Start the backend (START.bat); signals need live Binance data and trained models.'),
         ],
       ),
     );
@@ -409,7 +434,7 @@ class _SignalTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(MockData.names[signal.symbol] ?? signal.base,
+                      Text(coinName(signal.symbol),
                           style: AppText.body(14.5, w: FontWeight.w600)),
                       Text(
                           '${signal.model}, ${(signal.confidence * 100).round()}% confident',
@@ -439,7 +464,7 @@ class _SignalTile extends StatelessWidget {
 
 Future<void> showSignal(BuildContext context, AiSignal s) {
   final c = trendColor(s.trend);
-  final name = MockData.names[s.symbol] ?? s.base;
+  final name = coinName(s.symbol);
   return showPop<void>(
     context,
     child: Builder(
@@ -525,12 +550,13 @@ class _Watchlist extends StatelessWidget {
         return Column(
           children: [
             for (final s in MarketService.symbols)
+              if (market.ticker(s) != null)
               Tappable(
                 onTap: () => onPick(s),
                 semanticLabel: s,
                 pressScale: 0.99,
                 builder: (context, st) {
-                  final t = market.ticker(s);
+                  final t = market.ticker(s)!;
                   final on = s == selected;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -1057,7 +1083,7 @@ class _RiskCopilotInsightsState extends State<_RiskCopilotInsights> {
                 ),
               const SizedBox(height: 5),
               Text(
-                'Levels add context, not a directional probability. The supplied hit-rates are unverified for BTC/ETH.',
+                'Levels add context, not a directional probability.',
                 style: AppText.body(11.5, color: AppColors.faint),
               ),
             ],

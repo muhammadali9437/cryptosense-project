@@ -33,7 +33,7 @@ class AccountButton extends StatelessWidget {
                   context,
                   app.backendOnline
                       ? 'Connected to the backend'
-                      : 'Backend still offline (demo mode)',
+                      : 'Backend still offline',
                   color: app.backendOnline ? AppColors.bull : AppColors.warn,
                   icon: app.backendOnline
                       ? Icons.cloud_done_rounded

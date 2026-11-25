@@ -1,0 +1,28 @@
+\fypchapter{Conclusion and Future Work}{ch:conclusion}
+
+\chapteroverview
+This chapter presents the overall conclusion of the CryptoSense AI project. It summarises the contributions and findings of the system and proposes directions for future improvement and research.
+
+\section{Conclusion}
+CryptoSense AI was developed to help everyday cryptocurrency users understand market conditions and risk in plain language. The system brings together live prices, futures funding and open interest, liquidations, news sentiment, whale and smart-money activity, and machine learning signals in a single web application, and explains them through an explainable risk score, a Risk Copilot and a conversational assistant supported by six specialist analysts.
+
+The project achieved its objectives. Live market data is streamed from Binance and never replaced by fabricated values (PO1). An XGBoost and LightGBM ensemble was trained and honestly evaluated against a baseline with a leak-free chronological split (PO2). The seven-factor risk score, model votes, historical twins, key levels and what-if simulation make risk explainable (PO3). Sage coordinates six specialists, retrieves cited sources and uses language models only to phrase verified results (PO4). The Liquidation Intelligence module records observed liquidations, computes multi-window statistics, detects unusual activity with robust statistics and raises alerts with a cooldown (PO5). Portfolio limits, alerts with Telegram delivery and paper trading help users manage risk (PO6).
+
+The evaluation showed that public market data contains a weak but measurable signal: longer training history, volatility features and calibration improve the models, and downside risk is more predictable than direction. Equally important, the project showed how to present such models responsibly: by stating their limits, comparing them with a baseline, labelling raw scores as scores, and refusing to show made-up data or unverified numbers.
+
+\section{Future Work}
+Several enhancements can further improve accuracy, coverage and usefulness:
+\begin{itemize}
+\item \textbf{Calibrated downside-risk models:} train separate, calibrated models for precisely defined downside events at several horizons (for example a fall of at least 1\% within one hour, 2\% within four hours and 3\% within 24 hours), and show a horizon only after it passes out-of-sample validation (Brier skill above the baseline and a low calibration error).
+\item \textbf{New information sources:} add options-implied volatility (Deribit DVOL), recorded open-interest history, order-book depth and the liquidation history that CryptoSense now records, which are expected to improve risk prediction.
+\item \textbf{Risk Intelligence Specialist:} separate downside probability, volatility risk, drawdown severity, market stress, liquidity risk and derivatives risk, and validate the 0--100 score boundaries against realised outcomes.
+\item \textbf{Support and Resistance Engine:} detect price zones from swing points across five timeframes, score their strength, recognise breakouts, rejections and false breakouts, and draw the zones on the chart.
+\item \textbf{Market Regime and Anomaly Detection:} classify trending, ranging and high-volatility regimes, and extend the robust anomaly detection to price, volume, volatility, funding, open interest, order-book imbalance, stablecoin deviations and sentiment.
+\item \textbf{Native whale tracking:} track large Bitcoin and Ethereum transfers from public blockchain data, with clear separation between confirmed and uncertain exchange labels.
+\item \textbf{Main AI orchestrator and monitoring:} coordinate all modules with data-freshness checks, timeouts, request tracing, model version tracking and module health monitoring.
+\item \textbf{Live forward testing:} store every live prediction, score it once its horizon has passed, and show real live accuracy on the dashboard, with alerts when performance degrades.
+\item \textbf{Mobile applications:} publish Android and iOS builds from the same Flutter code base.
+\end{itemize}
+
+\section{Chapter Summary}
+This chapter concluded the CryptoSense AI project. The system meets its objectives by providing a live, explainable and honest view of cryptocurrency market risk, combining machine learning, transparent risk scoring, liquidation intelligence and a grounded conversational assistant. Future work focuses on calibrated downside-risk models, new data sources, additional analytical engines, an orchestrator with monitoring, live forward testing and mobile applications.

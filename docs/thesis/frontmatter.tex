@@ -1,0 +1,152 @@
+% ---------------------------------------------------------------- logo helper
+\newcommand{\unilogo}[1]{\IfFileExists{figures/comsats_logo.png}{\includegraphics[width=#1]{comsats_logo.png}}%
+  {\fbox{\parbox[c][#1][c]{#1}{\centering\small Put the university logo at\\ \texttt{figures/comsats\_logo.png}}}}}
+
+% ================================================================ title page 1
+\begin{titlepage}
+\centering
+\vspace*{0.4cm}
+{\fontsize{26}{32}\selectfont \projecttitle\par}
+\vspace{1.4cm}
+\unilogo{4.2cm}\par
+\vspace{1.4cm}
+{\Large\itshape By\par}
+\vspace{0.4cm}
+{\Large \studentA\\ \regA\\ \studentB\\ \regB\par}
+\vspace{1cm}
+{\Large Project\par}\vspace{0.4cm}
+{\Large for\par}\vspace{0.4cm}
+{\Large Bachelor of Science in Computer Science\par}
+\vspace{0.8cm}
+{\LARGE \university\\[4pt] \campus{} - Pakistan\par}
+\vspace{0.8cm}
+{\Large \session\par}
+\end{titlepage}
+\setcounter{page}{2}
+
+% ================================================================ title page 2
+\begin{center}
+\begin{minipage}{0.22\linewidth}\unilogo{2.6cm}\end{minipage}%
+\begin{minipage}{0.75\linewidth}\centering{\Large\bfseries \university, \campus}\end{minipage}
+\vspace{1.4cm}
+
+{\fontsize{22}{28}\selectfont \projecttitle\par}
+\vspace{1.4cm}
+{\large This Project is Presented to\par}\vspace{0.8cm}
+{\Large \university{} \campus\par}\vspace{0.8cm}
+{\large In partial fulfillment\\ of the requirement for the degree of\par}\vspace{0.8cm}
+{\LARGE BS in Computer Science\par}\vspace{0.8cm}
+{\large By\par}\vspace{0.5cm}
+{\large \studentA\\ \regA\\ \studentB\\ \regB\par}\vspace{1cm}
+{\LARGE \session\par}
+\end{center}
+\clearpage
+
+% ================================================================ submission page
+\begin{center}
+{\fontsize{22}{28}\selectfont \underline{CryptoSense AI: An Explainable AI-Based}\\[4pt]\underline{Cryptocurrency Market Risk Intelligence Platform}\par}
+\vspace{1cm}
+\begin{minipage}{0.92\linewidth}\large
+This final year project is submitted to the Department of Computer Science as partial fulfillment of the requirement for the award of the degree of BS Computer Science.
+\end{minipage}
+\vspace{1.2cm}
+
+{\renewcommand{\arraystretch}{2.2}
+\begin{tabular}{|p{0.38\linewidth}|p{0.42\linewidth}|}\hline
+\rowcolor{gray!60}\centering\textbf{Name} & \centering\arraybackslash\textbf{Registration Number}\\\hline
+\centering \studentA & \centering\arraybackslash \regA \\\hline
+\centering \studentB & \centering\arraybackslash \regB \\\hline
+\end{tabular}}
+\end{center}
+\vfill
+\begin{flushleft}
+{\large\bfseries Supervisor\par}\vspace{0.6cm}
+{\large \supervisor\\[4pt] \supervisordesignation,\\[4pt] Department of Computer Science\\[4pt] \university, \campus\par}
+\vspace{0.8cm}
+{\large \submissionmonth\par}
+\end{flushleft}
+\clearpage
+
+% ================================================================ final approval
+\begin{center}
+{\LARGE\bfseries Final Approval\par}\vspace{2pt}\rule{\linewidth}{0.5pt}\vspace{0.6cm}
+
+{\large This Project titled\par}\vspace{0.4cm}
+{\fontsize{20}{26}\selectfont \projecttitle\par}\vspace{1cm}
+{\large By\par}\vspace{0.8cm}
+{\large\itshape \studentA\\ \regA\\ \studentB\\ \regB\par}\vspace{1cm}
+{\large Has been approved for the \university, \campus.\par}
+\end{center}
+\vspace{0.6cm}
+{\large External Examiner: \rule{0.6\linewidth}{0.4pt}\par}
+\begin{center}{\large \examiner\\ \examinerorg\par}\end{center}
+\vspace{0.4cm}
+{\large Supervisor: \rule{0.66\linewidth}{0.4pt}\par}
+\begin{center}{\large \supervisor\\ Department of Computer Science, (CUI) \campus\par}\end{center}
+\vspace{0.4cm}
+{\large HoD: \rule{0.75\linewidth}{0.4pt}\par}
+\begin{center}{\large \hod\\ Department of Computer Science, (CUI) \campus\par}\end{center}
+\clearpage
+
+% ================================================================ declaration
+\begin{center}{\LARGE\bfseries\underline{Author's Declaration}}\end{center}
+\vspace{0.4cm}
+We, \studentA{} and \studentB, \regA{} and \regB, hereby declare that we have produced the work presented in this project during the scheduled period of study. We also declare that we have not taken any material from any source except where it is referred to, and that the amount of plagiarism is within the acceptable range. If a violation of HEC rules on research has occurred in this thesis, we shall be liable to punishable action under the plagiarism rules of HEC.
+\vspace{2.5cm}
+\begin{flushright}
+Student Signature\\[0.6cm]
+\studentA\\ \regA\\[1cm]
+Student Signature\\[0.6cm]
+\studentB\\ \regB
+\end{flushright}
+\vspace{0.8cm}
+Date: \rule{4cm}{0.4pt}
+\clearpage
+
+% ================================================================ certificate
+\begin{center}{\LARGE\bfseries\underline{Certificate}}\end{center}
+\vspace{0.4cm}
+It is certified that \studentA, \regA{} and \studentB, \regB, have carried out all the work related to this thesis under my supervision at the Department of Computer Science, \university, \campus, and the work fulfills the requirements for the award of the degree of BS in Computer Science.
+\vspace{2cm}
+\begin{flushright}
+Supervisor\\[1cm]\rule{4.5cm}{0.4pt}\\[0.6cm]
+\supervisor\\ \supervisordesignation,\\ Department of Computer Science,\\ CUI, \campus
+\end{flushright}
+\vspace{0.6cm}
+Head of Department:\\[1cm]\rule{4.5cm}{0.4pt}\\[0.6cm]
+\hod\\ \hoddesignation,\\ Department of Computer Science,\\ CUI, \campus
+\clearpage
+
+% ================================================================ dedication
+\vspace*{\fill}
+\begin{center}
+{\Large\itshape Dedicated to our parents,\\[8pt] who have always been our biggest supporters\\[8pt] and a constant source of inspiration\par}
+\end{center}
+\vspace*{\fill}
+\clearpage
+
+% ================================================================ acknowledgements
+\begin{center}
+{\LARGE\bfseries ACKNOWLEDGEMENTS\par}\vspace{0.4cm}
+{\large\bfseries Praise be to ALLAH, the Cherisher and Lord\\ of the World, Most Gracious and Most Merciful\par}
+\end{center}
+\vspace{0.3cm}
+We would like to express our sincere gratitude to \supervisor, our supervisor, for the invaluable guidance, continuous support and expert insights given throughout the development of our project titled ``\projecttitleinline.'' This mentorship was essential in shaping the project and bringing it to completion. We also thank the faculty of the Department of Computer Science for providing the resources and an environment in which learning and growth could take place. Finally, we give our heartfelt thanks to our families and peers, who supported us and gave us moral support throughout this work.
+\vspace{1.5cm}
+\begin{flushright}
+\studentA\\ \regA\\[1cm]
+\studentB\\ \regB
+\end{flushright}
+\clearpage
+
+% ================================================================ project summary
+\begin{center}{\LARGE\bfseries Project Summary}\end{center}
+\vspace{0.2cm}
+CryptoSense AI is a web application that helps everyday cryptocurrency users understand what the market is doing and how risky it is, in plain language. Most retail investors see prices and charts but not the context behind them: how volatile a coin is, whether leveraged traders are being forced out, what the news mood is, or how confident any prediction really is. CryptoSense brings these signals together in one place and explains them.
+
+The system streams live prices from Binance and computes 18 features per coin from hourly candles, futures funding rates, the Fear and Greed index and Bitcoin's trend. An ensemble of XGBoost and LightGBM models classifies the next 24 hours as bullish, bearish or neutral, and a transparent seven-factor risk score shows exactly why a coin is rated low, moderate or high risk. A Risk Copilot adds model votes, similar historical market periods, observed price levels and a volatility what-if simulation.
+
+A conversational assistant, Sage, coordinates six specialist analysts (market, derivatives, on-chain, news and sentiment, risk and explanation) and answers questions using retrieval over a knowledge base. Large language models (Anthropic Claude, with an OpenAI-compatible fallback) are used only to phrase answers; an explanation module rejects any answer that contains a number not found in the verified data. A Liquidation Intelligence module records Binance futures liquidations, computes statistics over five time windows, detects unusual activity with robust statistics, relates it to price, open interest and funding, and raises alerts by Telegram. Users can also manage a portfolio with stop-loss and take-profit limits, set alerts, and practise with a paper-trading account.
+
+The backend is built with Python and FastAPI, the frontend with Flutter for the web, and data is stored with SQLAlchemy in SQLite or PostgreSQL. A strict no-fabricated-data policy is applied throughout: when a live input is missing, the system reports it as unavailable instead of guessing. The system is verified by 65 automated backend tests, static analysis of the frontend and live end-to-end checks. Model results are reported honestly against a majority-class baseline, showing both what the models can and cannot do.
+\clearpage

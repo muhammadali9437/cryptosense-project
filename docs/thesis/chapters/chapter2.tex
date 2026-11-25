@@ -1,0 +1,46 @@
+\fypchapter{Literature Review}{ch:literature}
+
+\chapteroverview
+This chapter reviews existing cryptocurrency platforms and research related to market analysis, risk, liquidations, on-chain activity, sentiment and machine learning prediction. It identifies the limitations of existing solutions: fragmented information, technical presentation, paid access, predictions without honest evaluation, and AI assistants that may invent figures. It then shows how CryptoSense AI addresses these gaps.
+
+\section{Market Data Aggregators (CoinMarketCap and CoinGecko)}
+Market data aggregators such as CoinMarketCap and CoinGecko list prices, market capitalisation, trading volume and price history for thousands of assets. They are the most common starting point for retail users. However, they focus on reporting numbers rather than interpreting them: they do not explain current risk, do not combine derivatives, liquidation and sentiment signals into one assessment, and do not provide machine learning analysis with stated accuracy. CryptoSense uses live data as a starting point and adds explainable risk analysis on top of it.
+
+\section{Charting Platforms (TradingView)}
+TradingView provides professional charting with a large library of technical indicators and community scripts. It is powerful but assumes that the user already knows how to read indicators such as RSI, MACD and Bollinger Bands, and many advanced features require a subscription. It does not explain in plain language what the indicators mean for risk, and community signals are not evaluated against a baseline. CryptoSense computes the indicators automatically, explains them in plain words (through Sage and the Academy) and evaluates its model signals honestly.
+
+\section{Derivatives and Liquidation Analytics (CoinGlass)}
+Derivatives analytics platforms such as CoinGlass publish liquidation totals, open interest, funding rates and long/short ratios across exchanges. These data are valuable for understanding leverage in the market, but they are presented as dense dashboards for experienced traders, and some datasets require paid plans. They also rarely explain what a liquidation spike means or how it relates to price and open interest. CryptoSense builds its own liquidation intelligence from Binance's public stream, labels figures clearly as observed stream data, detects unusual activity with robust statistics and explains possible scenarios with the evidence that supports or contradicts each one.
+
+\section{On-Chain and Whale Tracking (Whale Alert and Glassnode)}
+Whale Alert reports large blockchain transfers in near real time and labels many exchange wallets, while on-chain analytics platforms such as Glassnode provide metrics derived from blockchain data. These services are useful but are either limited to raw transfer notifications or aimed at professional analysts, and full access usually requires a paid plan. A common mistake in retail interpretation is to treat every exchange inflow as selling. CryptoSense integrates Whale Alert when a key is configured, classifies exchange inflow and outflow, and explains transfers as observations rather than proof of intent.
+
+\section{Sentiment Platforms (LunarCrush and Santiment)}
+Social and news sentiment platforms track mentions, sentiment and attention across social media and news sources. They show that sentiment is an important context for crypto prices, but their scores are often proprietary and difficult to interpret. CryptoSense scores each headline with VADER, a transparent lexicon-based sentiment model \cite{hutto2014vader} extended with a crypto vocabulary, optionally compares it with the Jev decision model, and combines news sentiment with the Fear and Greed index.
+
+\section{Machine Learning for Cryptocurrency Prediction}
+Many studies apply machine learning to cryptocurrency price prediction. McNally et al. \cite{mcnally2018} compared recurrent neural networks and LSTM models for Bitcoin price direction and reported modest accuracy. Chen et al. \cite{chen2020bitcoin} showed that the best model depends on data frequency and that simpler statistical models can perform as well as complex ones on daily data. Gradient-boosted decision trees such as XGBoost \cite{chen2016xgboost} and LightGBM \cite{ke2017lightgbm} are strong on tabular indicator data and are widely used in practice.
+
+A recurring problem in this literature is evaluation. Random train/test splits allow information from the future to leak into training, which produces unrealistically high accuracy \cite{lopezdeprado2018}. The efficient market hypothesis \cite{fama1970} suggests that publicly available information is quickly reflected in prices, so modest accuracy is expected. Probabilistic forecasts should also be judged with proper scoring rules such as the Brier score \cite{brier1950} and calibrated before being presented as probabilities \cite{niculescu2005}. CryptoSense follows these lessons: it uses a chronological split with gaps, compares every model with a majority-class baseline, and labels uncalibrated outputs as raw scores.
+
+\section{Grounded Conversational Assistants}
+Large language models can explain complex topics in plain language, but they can also produce fluent statements that are not supported by data. Retrieval-augmented generation \cite{lewis2020rag} reduces this risk by giving the model relevant source passages and asking it to cite them. In a financial application, an invented price or probability could mislead a user, so retrieval alone is not enough. CryptoSense combines retrieval with a verification step: every number in an AI-written explanation must match a number in the computed facts, otherwise the answer is replaced by a deterministic, rules-based explanation.
+
+\section{Comparison with Existing Solutions}
+Table~\ref{tab:related} summarises the weaknesses of existing solutions and how CryptoSense AI addresses them.
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.2\linewidth}|p{0.34\linewidth}|p{0.36\linewidth}|}
+\caption{Related System Analysis with Proposed CryptoSense AI Solution}\label{tab:related}\\\hline
+\textbf{Application} & \textbf{Weakness} & \textbf{Proposed Project Solution}\\\hline\endfirsthead
+\hline\textbf{Application} & \textbf{Weakness} & \textbf{Proposed Project Solution}\\\hline\endhead
+CoinMarketCap / CoinGecko & Report prices and volumes but do not interpret risk or combine signals. & Combines live prices with derivatives, liquidation, sentiment and ML signals into an explained risk view.\\\hline
+TradingView & Assumes indicator knowledge; advanced features are paid; community signals are not evaluated. & Computes indicators automatically, explains them in plain words and evaluates model signals against a baseline.\\\hline
+CoinGlass & Dense expert dashboards; some data paid; little explanation of what spikes mean. & Observed liquidation statistics, robust spike detection and scenario explanations with supporting and contradicting evidence.\\\hline
+Whale Alert / Glassnode & Raw notifications or expert metrics; paid access; inflows often misread as selling. & Classifies exchange flows and explains them as observations, not proof of intent.\\\hline
+LunarCrush / Santiment & Proprietary sentiment scores that are hard to interpret. & Transparent VADER sentiment with a crypto lexicon, optional Jev comparison and the Fear and Greed index.\\\hline
+General AI chatbots & May invent prices, statistics or probabilities. & Six specialist analysts, retrieval with citations, and a verification step that rejects unverified numbers.\\\hline
+\end{longtable}}
+
+\section{Chapter Summary}
+This chapter reviewed market data aggregators, charting platforms, derivatives and liquidation analytics, on-chain and whale trackers, sentiment platforms, machine learning research and grounded conversational assistants. Existing solutions are fragmented, technical, often paid, and rarely evaluate predictions honestly. CryptoSense AI addresses these gaps with a single explainable platform, honest model evaluation and a verified AI explanation layer. The next chapter specifies the requirements of the system.

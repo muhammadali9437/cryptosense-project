@@ -15,8 +15,13 @@ router = APIRouter(prefix="/api/portfolio", tags=["Portfolio & limits"])
 async def build_portfolio(user: User, db: Session) -> PortfolioOut:
     live = await prices()
     rows, value, cost = [], 0.0, 0.0
+    all_live = True
     for h in db.scalars(select(Holding).where(Holding.user_id == user.id)).all():
-        price = live.get(h.symbol, {}).get("price") or await price_of(h.symbol) or h.avg_buy
+        market_price = live.get(h.symbol, {}).get("price") or await price_of(h.symbol)
+        # Without a live price the holding is valued at its buy price and flagged (prices_live=False);
+        # the client must not present that as a market price.
+        all_live = all_live and market_price is not None
+        price = market_price or h.avg_buy
         v, c = h.amount * price, h.amount * h.avg_buy
         value, cost = value + v, cost + c
         rows.append({
@@ -26,7 +31,8 @@ async def build_portfolio(user: User, db: Session) -> PortfolioOut:
         })
     rows.sort(key=lambda r: r["value"], reverse=True)
     pnl = value - cost
-    return PortfolioOut(value=value, cost=cost, pnl=pnl, pnl_pct=(pnl / cost * 100) if cost else 0.0, holdings=rows)
+    return PortfolioOut(value=value, cost=cost, pnl=pnl, pnl_pct=(pnl / cost * 100) if cost else 0.0, holdings=rows,
+                        prices_live=all_live)
 
 
 def _find(db: Session, user: User, symbol: str) -> Holding | None:

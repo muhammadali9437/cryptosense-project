@@ -1,0 +1,93 @@
+\fypchapter{Introduction}{ch:intro}
+
+\chapteroverview
+This chapter introduces CryptoSense AI, an explainable, AI-based cryptocurrency market risk intelligence platform. It explains the motivation behind the system, its significance, the problem it addresses, its scope and objectives, its limitations, the project deliverables, its relevance to the courses of the BS Computer Science programme, and the research objectives and questions that guided the work. It closes with the contributions of the project.
+
+\section{Introduction}
+Cryptocurrencies such as Bitcoin and Ethereum trade twenty-four hours a day, and their prices often move several percent within hours. Millions of retail users now hold crypto assets, but most of them see only a price and a chart. The factors that actually describe the risk of a position, such as volatility, leverage in the futures market, forced liquidations, large transfers by ``whales'', news sentiment and the behaviour of Bitcoin itself, are spread across many specialist websites, are presented in technical language, and are rarely explained.
+
+CryptoSense AI is a web application that brings these signals together and explains them in plain words. It streams live market data from Binance, computes technical and market-context features, and uses an ensemble of gradient-boosted machine learning models (XGBoost and LightGBM) to classify the next 24 hours for each tracked coin. A transparent seven-factor risk score shows exactly why a coin is rated low, moderate or high risk, and a Risk Copilot adds model agreement, similar historical periods, observed price levels and a volatility what-if simulation.
+
+A conversational assistant named Sage coordinates six specialist analysts and answers user questions with retrieval-augmented generation. Large language models are used only to phrase verified results: the system checks every number in an AI-written explanation against the computed data and rejects the answer if a number cannot be traced. A Liquidation Intelligence module records forced closures of leveraged Binance futures positions, detects unusual activity with robust statistics, relates it to price, open interest and funding, and sends alerts. Users can also track a portfolio with stop-loss and take-profit limits, create alerts, read news with sentiment, monitor whale activity and practise trading with pretend money.
+
+A central design principle of the project is honesty about data and models. When a live input is unavailable, CryptoSense reports it as unavailable instead of substituting made-up values, and model results are always reported against a simple baseline so that users and examiners can see what the models can and cannot do.
+
+\section{Significance of the Proposed System}
+\textbf{Vision Statement:} For retail cryptocurrency users, students and beginner investors who need to understand market conditions and risk before making decisions, CryptoSense AI is a market risk intelligence platform that combines live market data, machine learning and explainable analytics in one place. Unlike price trackers that show numbers without context, or professional analytics platforms that are expensive and written for experts, CryptoSense explains what is happening and why, states the uncertainty of every model output, and never presents missing or simulated data as live evidence.
+
+The system is significant for three reasons. First, it lowers the barrier to understanding market risk: concepts such as funding rates, liquidations and volatility are explained where they appear. Second, it promotes responsible behaviour: the platform does not execute trades or tell users to buy or sell, and it encourages stop-losses and position sizing. Third, it demonstrates a trustworthy way to use large language models in a financial setting, where every figure in an AI-written explanation is verified against computed data.
+
+\section{Problem Statement}
+Retail cryptocurrency users make decisions with incomplete and fragmented information. Prices are easy to find, but the signals that describe risk are spread across different platforms, require technical knowledge and are often behind paid subscriptions. Users rarely know how volatile an asset currently is, whether leveraged traders are being liquidated, how strongly futures traders lean in one direction, or what the news mood is. Many applications that do show predictions present them as confident signals without stating their accuracy, and some fill gaps with simulated data that looks real. Chat assistants based on large language models can make the situation worse by inventing prices or statistics.
+
+There is therefore a need for a single system that (i) collects live market, derivatives, liquidation, sentiment and on-chain data, (ii) turns it into transparent, explainable risk information, (iii) applies machine learning with honest evaluation, and (iv) explains everything in plain language without inventing numbers.
+
+\section{Scope and Objectives}
+CryptoSense AI is a web application with a Python backend that analyses six major cryptocurrencies (BTC, ETH, BNB, SOL, XRP and ADA) traded against USDT on Binance. Its scope includes live market monitoring, machine learning market-state signals, an explainable risk score and Risk Copilot, a conversational assistant with six specialist analysts, liquidation intelligence for Binance USD-M futures, news sentiment, whale and smart-money tracking (when the optional data keys are configured), new listing discovery, portfolio tracking with profit and loss limits, configurable alerts with Telegram delivery, paper trading and an educational Academy. Order execution, custody of funds and financial advice are outside the scope of the project.
+
+\textbf{Project Objectives}
+\begin{enumerate}[label=PO\arabic*]
+\item To build a live market monitoring platform that streams real prices and candles from Binance and never displays fabricated market data.
+\item To develop and honestly evaluate a machine learning ensemble (XGBoost and LightGBM) that classifies the next 24 hours of each tracked coin, using a leak-free chronological evaluation and a majority-class baseline.
+\item To provide an explainable risk score and a Risk Copilot that show the factors behind every score, model agreement, similar historical periods and what-if scenarios.
+\item To build a conversational assistant that coordinates six specialist analysts and uses language models only to phrase verified results.
+\item To build a liquidation intelligence module that records observed Binance liquidations, computes multi-window statistics, detects unusual activity and raises alerts.
+\item To give users tools to manage risk: portfolio tracking, stop-loss and take-profit limits, alerts with Telegram delivery and a paper-trading account.
+\end{enumerate}
+
+\section{System Limitations/Constraints}
+\textbf{[L1]} The machine learning models are trained on public market data only. Crypto markets are noisy and largely efficient, so the models provide weak but measurable signals; on recent unseen data their accuracy is below that of always predicting ``neutral'' (see Chapter~\ref{ch:testing}). Their outputs are presented as model scores, not guarantees.
+
+\textbf{[L2]} The ensemble probabilities are not yet calibrated, so the bearish score shown in the risk factors is labelled as a raw model score and not as a probability.
+
+\textbf{[L3]} Binance's liquidation stream sends at most one liquidation per symbol per second. Liquidation figures are therefore observed samples of activity, not exchange-wide totals, and history only exists from the moment the backend starts recording.
+
+\textbf{[L4]} Whale transfers, congressional and insider trades of crypto-linked stocks, LLM-written answers, Jev news judgement, CryptoPanic news and Telegram delivery require optional API keys. Without them these features report that they are unavailable.
+
+\textbf{[L5]} Futures funding history on Binance begins in 2019--2020 and the Fear and Greed index in 2018, so models can only be trained on about six to seven years of complete, real data even when ten years are requested.
+
+\textbf{[L6]} The seven-factor risk score uses documented but hand-chosen weights and level boundaries; these boundaries have not yet been validated against realised outcomes.
+
+\textbf{[L7]} The system depends on the availability of third-party APIs. When they are unreachable, the affected features show ``unavailable'' instead of data.
+
+\textbf{[L8]} CryptoSense is an analysis and education tool. It does not execute orders and does not provide financial advice.
+
+\section{Project Deliverables}
+The major deliverables of the CryptoSense AI project are:
+\begin{itemize}
+\item A complete web application (Flutter) with eleven screens: Overview, Portfolio, Alerts, Profit and Loss Limits, News, Whale Watch, Liquidations, New Listings, Academy, Risk Copilot chat and Paper Trading.
+\item A backend REST API (FastAPI) with 47 endpoints, background workers and a relational database.
+\item A trained XGBoost and LightGBM ensemble with a reproducible training pipeline and a metrics report.
+\item A Liquidation Intelligence module with statistics, anomaly detection, market context, explanations and alerts.
+\item An automated test suite of 65 backend tests.
+\item Technical documentation, design diagrams, a project report and a presentation.
+\end{itemize}
+
+\section{Relevance to Course Modules}
+CryptoSense AI applies knowledge from many courses of the BS Computer Science programme. \textbf{Programming Fundamentals} and \textbf{Object-Oriented Programming} were used to build modular Python services and Dart widgets. \textbf{Data Structures and Algorithms} and \textbf{Design and Analysis of Algorithms} guided the rolling-window statistics, de-duplication with bounded queues and efficient nearest-neighbour search for historical market twins. \textbf{Software Engineering} practices were followed for requirements, design, testing and documentation.
+
+\textbf{Database Systems} concepts were applied in the relational schema, indexes for time-series queries and SQL aggregation. \textbf{Computer Networks} knowledge was needed for REST, WebSocket streaming, reconnection and timeouts. \textbf{Information Security} principles were applied through password hashing with bcrypt, JSON Web Tokens and keeping secrets out of source control. \textbf{Artificial Intelligence}, \textbf{Machine Learning}, and \textbf{Probability and Statistics} were central to feature engineering, gradient-boosted classifiers, chronological evaluation, calibration, robust z-scores and retrieval-augmented generation. \textbf{Human--Computer Interaction} shaped the plain-language, beginner-friendly interface, and \textbf{Parallel and Distributed Computing} concepts were applied in the asynchronous background workers.
+
+\section{Research Objective}
+\begin{itemize}
+\item To combine live market, derivatives, liquidation, sentiment and on-chain signals into a single explainable view of cryptocurrency market risk.
+\item To measure how well gradient-boosted models trained on public data can classify short-horizon market states, using a leak-free chronological evaluation.
+\item To study how the amount of training history (two, five and ten years requested) affects out-of-sample performance on the same unseen period.
+\item To design a safe way of using large language models for financial explanations, in which every number is verified against computed data.
+\item To detect unusual liquidation activity with robust statistical baselines rather than fixed thresholds.
+\end{itemize}
+
+\section{Research Questions}
+\begin{enumerate}[label=RQ\arabic*.]
+\item How accurately can XGBoost and LightGBM classify the next 24 hours of major cryptocurrencies from public market data, compared with a majority-class baseline?
+\item Does training on a longer history improve performance on the same recent, unseen period?
+\item Is short-horizon downside risk (the size of moves) more predictable than direction?
+\item How can a large language model be used to explain market analytics without inventing prices, amounts or probabilities?
+\item How can unusual liquidation activity be identified reliably from a sampled stream?
+\end{enumerate}
+
+\section{Contribution}
+This project contributes a working, end-to-end market risk intelligence platform that combines machine learning, transparent risk scoring, liquidation analytics and a multi-specialist conversational assistant. Its main contributions are: (1) an explainable risk score whose factors are always visible; (2) a grounded explanation layer that verifies every number written by a language model; (3) a liquidation intelligence module that clearly separates observed stream data from market-wide totals and uses robust statistics for spike detection; (4) a strict no-fabricated-data policy across the backend and frontend; and (5) an honest evaluation of the machine learning models, including a comparison of training-history lengths and an experiment on downside-risk targets.
+
+\section{Chapter Summary}
+This chapter introduced CryptoSense AI and explained the problem of fragmented, hard-to-understand market risk information faced by retail cryptocurrency users. It presented the vision, objectives and scope of the system, its limitations, deliverables and relevance to the degree programme, and the research objectives and questions that guided the project. The next chapter reviews existing platforms and research related to the proposed system.

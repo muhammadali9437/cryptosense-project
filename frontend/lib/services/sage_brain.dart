@@ -6,9 +6,8 @@ import 'market_service.dart';
 
 /// Sage is the human-like guide of CryptoSense.
 ///
-/// For now Sage answers with rules + live numbers from [MarketService].
-/// In the backend step, [reply] will call the FastAPI chatbot endpoint
-/// (OpenAI / LLM) and send it the same live context.
+/// Offline fallback: when the backend chat can't be reached, Sage answers with rules +
+/// live numbers from [MarketService] (never made-up figures).
 class SageBrain {
   SageBrain._();
 
@@ -162,15 +161,14 @@ class SageBrain {
     if (has([
           'signal',
           'model',
-          'random forest',
           'xgboost',
-          'svm',
+          'lightgbm',
           'confidence',
           'predict'
         ]) ||
         RegExp(r'\bai\b').hasMatch(q)) {
-      return 'Our AI models (Random Forest, XGBoost and SVM) learned from years of Binance price history. '
-          'They classify the next period as bullish, bearish or neutral and give a confidence score. '
+      return 'Our AI models (XGBoost and LightGBM) learned from several years of Binance price history. '
+          'They classify the next 24 hours as bullish, bearish or neutral and give a model score. '
           'They do not predict an exact price, and a high confidence can still be wrong. '
           'Tap any signal on the Overview page to see the reasons behind it.';
     }
@@ -235,6 +233,10 @@ class SageBrain {
   static String _portfolio(MarketService m, AppState app) {
     if (app.holdings.isEmpty) {
       return "You haven't added any coins yet. Open Portfolio and tap Add holding, then I can tell you how you're doing.";
+    }
+    if (app.holdings.any((h) => m.tickers[h.symbol] == null)) {
+      return "Live prices aren't available right now, so I can't work out your current profit or loss. "
+          'Try again once the connection to Binance is back.';
     }
     final value = app.portfolioValue(m.tickers);
     final cost = app.portfolioCost();

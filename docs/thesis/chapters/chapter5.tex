@@ -1,0 +1,210 @@
+\fypchapter{Testing \& Evaluation}{ch:testing}
+
+\chapteroverview
+This chapter presents the testing and evaluation of CryptoSense AI. The backend was verified with an automated suite of 65 unit and integration tests, the frontend with static analysis and a production web build, and the running system with live end-to-end checks against real Binance data. The machine learning models were evaluated on unseen, chronologically later data and compared with a majority-class baseline. All results reported here come from tests and measurements that were actually executed.
+
+\section{Testing Approach and Environment}
+\begin{itemize}
+\item \textbf{Automated backend tests:} 65 tests written with Python's \texttt{unittest} framework, run with \texttt{python -m unittest discover -s tests}. External services are replaced by test doubles, and an in-memory SQLite database is used for storage tests, so the tests are fast and repeatable. Result of the final run: \textbf{65 tests, all passed}.
+\item \textbf{Frontend checks:} \texttt{flutter analyze} reported no errors or warnings in the application code (only style suggestions), and \texttt{flutter build web} compiled the application successfully.
+\item \textbf{Live end-to-end checks:} the backend and frontend were run together on a Windows PC (Python 3.11.9, Flutter 3.35.4, Chrome) against live Binance data, and every public GET endpoint and the main screens were exercised.
+\item \textbf{Model evaluation:} chronological train/validation/test splits with gaps, a majority-class baseline, and a comparison of models on the same unseen period.
+\end{itemize}
+
+\section{Unit Testing}
+Unit tests verify individual components in isolation. Each case below corresponds to one or more automated tests in the \texttt{backend/tests} folder.
+
+\testcase{Unit Testing 1: Liquidation Event Parsing and Classification}
+{Verify that forced SELL orders are classified as long liquidations, forced BUY orders as short liquidations, and that the USD value equals filled quantity times average price.}
+{Correct position, side and USD value; USD marked invalid for coin-margined or non-stablecoin contracts.}
+{All parsing tests passed (test\_sell\_is\_long\_and\_buy\_is\_short, test\_usd\_uses\_filled\_quantity\_times\_average\_price, test\_usd\_not\_valid\_for\_coin\_margined\_or\_non\_stable\_quote).}
+{Pass}
+
+\testcase{Unit Testing 2: Invalid, Missing and Duplicate Data}
+{Ensure that malformed messages, missing fields, zero prices and duplicates are rejected.}
+{Invalid records produce no events; a repeated event is stored only once.}
+{Verified by test\_invalid\_and\_missing\_data\_is\_skipped, test\_duplicates\_are\_dropped and test\_store\_skips\_existing\_rows.}
+{Pass}
+
+\testcase{Unit Testing 3: Time-Window Statistics}
+{Validate totals, long/short ratio, largest event, coin filters and zero-filled, UTC-aligned timelines for 5m to 24h windows.}
+{Totals cover the whole window (not only the returned events); timelines are sorted and aligned to bucket boundaries.}
+{Verified by test\_window\_totals\_ratio\_and\_largest, test\_symbol\_and\_other\_filters, test\_timeline\_is\_zero\_filled\_and\_utc\_aligned and test\_totals\_cover\_whole\_window\_not\_just\_limit.}
+{Pass}
+
+\testcase{Unit Testing 4: Liquidation Spike Detection}
+{Check that spikes are detected only above the robust z-score and minimum amount, and that normal activity and small amounts on a quiet baseline are not flagged.}
+{Long spike, total spike and imbalance shift detected for injected test data; no anomaly for normal data; ``insufficient baseline'' with less than one hour of history.}
+{Verified by test\_spike\_detected\_only\_above\_z\_and\_minimum, test\_small\_amount\_on\_quiet\_baseline\_is\_not\_a\_spike, test\_normal\_activity\_is\_quiet, test\_burst and test\_db\_detection\_needs\_baseline\_then\_finds\_spike.}
+{Pass}
+
+\testcase{Unit Testing 5: Grounded Explanation (Number Verification)}
+{Ensure that numbers written by a language model are accepted only if they appear in the computed facts.}
+{Rounded values and K/M suffixes are accepted; invented prices and probabilities are rejected and the rules-based answer is returned.}
+{Verified by test\_grounded\_numbers\_pass\_including\_rounding\_and\_suffixes, test\_invented\_numbers\_are\_caught and test\_llm\_answer\_with\_invented\_numbers\_falls\_back\_to\_rules.}
+{Pass}
+
+\testcase{Unit Testing 6: No Fabricated Data}
+{Verify that missing live inputs produce ``unavailable'' instead of made-up values.}
+{Empty prices when Binance fails; signals unavailable (HTTP 503 with the list of missing inputs) when candles, funding, the Fear and Greed index or a trained model are missing; whales and news unavailable without a source.}
+{Verified by the six tests in test\_no\_fake\_data.py.}
+{Pass}
+
+\testcase{Unit Testing 7: Specialist Agents}
+{Check that the six specialists report their status honestly and that the orchestrator returns all six in order.}
+{Partial status when live figures are missing; unavailable whale or news feeds are not used as live evidence.}
+{Verified by the six tests in test\_agents.py.}
+{Pass}
+
+\testcase{Unit Testing 8: Language Model Fallback Chain}
+{Verify that Claude is used first, that failures fall back to the OpenAI-compatible model and then to rules, and that a refusal triggers the fallback.}
+{Correct provider order and request shape.}
+{Verified by the four Sage tests in test\_integrations.py.}
+{Pass}
+
+\section{Functional Testing}
+Functional testing validates that each module performs its intended operations in the running system with live data.
+
+\testcase{Functional Testing 1: Live Market Module}
+{Confirm that real prices stream into the interface and that the chart loads real candles.}
+{Live badge shown; BTC and ETH prices update; chart shows Binance candles.}
+{Live prices and candles shown (Figure~\ref{fig:scr-overview}); with Binance unreachable the screen states that live data is unavailable.}
+{Pass}
+
+\testcase{Functional Testing 2: AI Signals and Risk Score}
+{Verify that signals and risk scores are produced from live data and explained.}
+{Signals for all six coins with model votes; risk score with seven factors.}
+{All six signals returned by the ensemble; BTC risk shown with its factors (36\%, moderate, at the time of testing).}
+{Pass}
+
+\testcase{Functional Testing 3: Risk Copilot Chat}
+{Verify that a question is answered by the backend with the six specialists and sources.}
+{Answer with specialist cards and cited sources.}
+{The question ``How risky is BTC right now?'' was answered in about 2.4 seconds with six specialist reports and three sources (Figure~\ref{fig:scr-copilot}).}
+{Pass}
+
+\testcase{Functional Testing 4: Liquidation Intelligence}
+{Confirm that the liquidation stream receives real events and that the screen shows statistics and charts.}
+{Connected stream, valid events, totals and charts.}
+{In a live run the stream received 94 messages with 0 invalid and 0 duplicates; the screen showed totals, ratio, largest event, most affected coin and charts (Figure~\ref{fig:scr-liq}).}
+{Pass}
+
+\testcase{Functional Testing 5: Public API Endpoints}
+{Verify that every public GET endpoint responds.}
+{HTTP 200 with real or clearly ``unavailable'' data.}
+{All 19 public GET endpoints returned HTTP 200; whale and Quiver feeds correctly reported ``unavailable'' because no keys were configured.}
+{Pass}
+
+\section{Business Rules Testing}
+This testing ensures that the internal rules of the system behave correctly.
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.26\linewidth}|p{0.32\linewidth}|p{0.32\linewidth}|}
+\caption{AI Signal Availability Business Rule}\label{tab:br-signal}\\\hline
+\textbf{Condition} & \textbf{Description} & \textbf{Expected Action}\\\hline
+All inputs real & Candles, funding and Fear and Greed fetched; trained model present & Compute and return the signal\\\hline
+Any input missing & One or more sources unreachable & Return HTTP 503 with the missing inputs; never substitute values\\\hline
+Low confidence & Top directional score below 0.55 & Show the signal as neutral\\\hline
+\end{longtable}}
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.26\linewidth}|p{0.32\linewidth}|p{0.32\linewidth}|}
+\caption{Liquidation Alert Business Rule}\label{tab:br-liq}\\\hline
+\textbf{Condition} & \textbf{Description} & \textbf{Expected Action}\\\hline
+Condition met & Event size or robust z-score reaches the user's threshold and the minimum amount & Create a notification and send it to Telegram\\\hline
+Cooling down & Alert fired within the cooldown period (30 minutes) & Do not notify again\\\hline
+Insufficient history & Less than one hour of stored history & Do not judge spikes\\\hline
+\end{longtable}}
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.26\linewidth}|p{0.32\linewidth}|p{0.32\linewidth}|}
+\caption{Grounded Explanation Business Rule}\label{tab:br-explain}\\\hline
+\textbf{Condition} & \textbf{Description} & \textbf{Expected Action}\\\hline
+No language model configured & No API key & Return the rules-based answer\\\hline
+All numbers traceable & Every number matches the facts & Return the model's answer, marked as verified\\\hline
+Untraceable number & A number not found in the facts & Discard the model's answer and return the rules-based answer\\\hline
+\end{longtable}}
+
+\section{Integration Testing}
+\testcase{Integration Testing 1: Chat Endpoint with Specialists}
+{Ensure that the chat endpoint gathers context, runs all six specialists and returns them with the answer.}
+{Response contains the answer and six specialist reports.}
+{Verified by test\_chat\_returns\_all\_six\_specialist\_reports and in the running system.}
+{Pass}
+
+\testcase{Integration Testing 2: Liquidation Store, Statistics and Explanation}
+{Validate the flow from stored events to the statistics, timeline, history, anomaly and explanation endpoints.}
+{Correct totals and six rules-based answers without a language model.}
+{Verified by test\_stats\_timeline\_history\_status and test\_explain\_uses\_rules\_without\_llm.}
+{Pass}
+
+\testcase{Integration Testing 3: Stream Disconnection and Reconnection}
+{Verify that the stream reconnects after a network error and records the gap.}
+{One reconnect counted, gap closed, events received after reconnecting.}
+{Verified by test\_disconnect\_then\_reconnect\_is\_tracked.}
+{Pass}
+
+\testcase{Integration Testing 4: Alerts and Telegram}
+{Verify that alerts are evaluated with the cooldown and delivered to Telegram only when configured.}
+{One notification per event; no message without credentials.}
+{Verified by test\_evaluate\_fires\_once\_then\_cools\_down, the Telegram tests and the watcher tests.}
+{Pass}
+
+\testcase{Integration Testing 5: Frontend and Backend}
+{Ensure that the web application consumes the backend correctly.}
+{All screens load data from the backend without errors.}
+{During the live run every request from the browser returned HTTP 200 and no errors were logged by the backend or the application.}
+{Pass}
+
+\section{Machine Learning Evaluation}
+\subsection{Deployed Ensemble}
+The deployed models were trained on two years of hourly data (24-hour horizon, $\pm2.5\%$ threshold) with 72{,}984 training, 15{,}414 validation and 15{,}708 test rows. Table~\ref{tab:ml-deployed} shows the results on the test set. ``Confident accuracy'' is the accuracy on the predictions whose top score is at least 0.5, and ``coverage'' is the share of predictions that are this confident.
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.26\linewidth}|c|c|c|c|}
+\caption{Test-Set Results of the Deployed Models}\label{tab:ml-deployed}\\\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Confident acc.} & \textbf{Coverage}\\\hline
+XGBoost & 0.556 & 0.414 & 0.782 & 0.351\\\hline
+LightGBM & 0.544 & 0.397 & 0.656 & 0.517\\\hline
+Ensemble & 0.555 & 0.405 & 0.726 & 0.419\\\hline
+Always ``neutral'' (baseline) & 0.712 & 0.277 & -- & --\\\hline
+\end{longtable}}
+
+The models are trained with class balancing so that they try to recognise the rarer bullish and bearish periods; this improves macro-F1 (0.405 versus 0.277 for the baseline) but lowers plain accuracy, because about 70\% of hours are neutral. Accuracy alone is therefore not a good measure of skill for this task. When the models are confident, their accuracy rises to 0.73--0.78, which is why low-confidence directional calls are shown as neutral.
+
+\subsection{Effect of Training History}
+Models were retrained on five and ten years of requested history and compared with the deployed two-year models on the \textbf{same} final 100 days (14{,}256 hourly rows), which none of the three models saw during training. For the ten-year run, only hours with real funding and Fear and Greed data were used, so the training data actually starts between September 2019 (BTC) and September 2020 (SOL).
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.28\linewidth}|c|c|c|c|c|}
+\caption{Comparison on the Same Unseen 100 Days}\label{tab:ml-history}\\\hline
+\textbf{History} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Log loss} & \textbf{Fall Brier} & \textbf{Fall AUC}\\\hline
+2 years (deployed) & 0.518 & 0.395 & 0.987 & 0.160 & 0.573\\\hline
+5 years & 0.564 & 0.407 & 0.973 & 0.160 & 0.613\\\hline
+10 years requested & 0.597 & 0.407 & 0.924 & 0.152 & 0.608\\\hline
+Always ``neutral'' & 0.687 & -- & -- & -- & --\\\hline
+\end{longtable}}
+
+Longer history clearly helps: the ten-year model has the best accuracy, log loss and Brier score, and both longer histories identify falls better (ROC-AUC about 0.61 instead of 0.57). However, all models remain weak predictors of direction, which is consistent with the efficient market hypothesis \cite{fama1970}.
+
+\subsection{Calibration and Downside-Risk Experiment}
+A further experiment tested two improvements on the most recent year of unseen data (25 October 2025 to 22 November 2026, 53{,}574 rows): twelve additional volatility and calendar features computed only from past data, and probability calibration (multinomial Platt scaling fitted on a held-out part of the validation set). It also tested a different target: whether the price \textit{touches} 2.5\% below the current close at any time in the next 24 hours, which measures downside risk rather than direction.
+
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.42\linewidth}|c|c|c|c|}
+\caption{Calibration and Downside-Risk Experiment (Unseen Year)}\label{tab:ml-experiment}\\\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Log loss} & \textbf{Brier} & \textbf{AUC}\\\hline
+\multicolumn{5}{|l|}{\textit{Direction (3 classes), Brier and AUC for the bearish class}}\\\hline
+Baseline (class frequencies) & 0.689 & 0.867 & 0.146 & 0.500\\\hline
+LightGBM, current features & 0.687 & 0.811 & 0.142 & 0.626\\\hline
+LightGBM + volatility features, calibrated & 0.689 & 0.796 & 0.140 & 0.643\\\hline
+\multicolumn{5}{|l|}{\textit{Downside touch of $-2.5\%$ within 24 hours (base rate 0.354)}}\\\hline
+Baseline (base rate) & 0.646 & 0.671 & 0.239 & 0.500\\\hline
+Logistic regression on ATR only & 0.662 & 0.620 & 0.215 & 0.670\\\hline
+LightGBM + volatility features & 0.668 & 0.598 & 0.207 & 0.689\\\hline
+\end{longtable}}
+
+Calibration and volatility features reduce log loss and bring the Brier score for falls to 0.140, better than the baseline of 0.146, while discrimination improves to an AUC of 0.643. The downside-touch target is more predictable than direction (AUC 0.689), largely because volatility is persistent: a model using ATR alone already reaches an AUC of 0.670. These results answer research questions RQ1--RQ3: public market data contains a weak but real signal, more history helps, and downside risk is more predictable than direction. They also show that much higher figures (for example an AUC of 0.80 for 24-hour direction) are not achievable from these data without information leakage. Further gains require new information, such as options-implied volatility and recorded open interest and liquidation history.
+
+\section{Chapter Summary}
+This chapter described the testing and evaluation of CryptoSense AI. All 65 automated backend tests passed, the frontend compiled without errors, and live end-to-end checks confirmed that the system works with real Binance data and reports unavailable inputs honestly. The machine learning models were evaluated against a baseline on unseen data: they provide a weak but measurable signal, which improves with longer history, calibration and volatility features, and downside risk proved more predictable than direction. The next chapter concludes the project and proposes future work.

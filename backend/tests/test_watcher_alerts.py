@@ -60,15 +60,15 @@ class ExternalAlertTests(unittest.IsolatedAsyncioTestCase):
             watcher._remember_external_alert(first[0][0])
             self.assertEqual(await watcher._external_alert_messages(), [])
 
-    async def test_demo_whale_items_are_never_sent_as_live_alerts(self):
+    async def test_unavailable_whale_items_are_never_sent_as_live_alerts(self):
         with (
             patch.object(watcher.liquidations, "snapshot", return_value={"connected": False, "items": []}),
             patch.object(watcher.settings, "whale_alert_key", "configured"),
             patch.object(watcher, "whales") as whale_service,
         ):
             whale_service.latest_whales = AsyncMock(return_value={
-                "source": "demo",
-                "items": [{"id": "demo-1", "usd": 10_000_000}],
+                "source": "unavailable",
+                "items": [{"id": "test-1", "usd": 10_000_000}],
             })
             self.assertEqual(await watcher._external_alert_messages(), [])
 

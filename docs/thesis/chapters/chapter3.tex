@@ -1,0 +1,194 @@
+\fypchapter{Requirement Analysis}{ch:requirements}
+
+\chapteroverview
+This chapter specifies the functional and non-functional requirements of CryptoSense AI. It describes the user classes, the techniques used to identify requirements, twelve functional requirements, the quality attributes the system must satisfy, and the user, software, hardware and communication interfaces.
+
+\section{User Classes and Characteristics}
+\begin{itemize}
+\item \textbf{Beginner investors and learners:} people who are new to cryptocurrency and want to understand prices, risk and basic indicators. They need plain language, guidance (the Sage tour, lightbulb explanations and the Academy) and protection from over-confident signals.
+\item \textbf{Active retail traders:} users who follow the market daily and want consolidated risk information, liquidation and derivatives context, alerts and portfolio limits. They value speed, accuracy and Telegram notifications.
+\item \textbf{Students and researchers:} users who study market behaviour and machine learning. They need transparent methods, reproducible training and honest metrics (available through the model-information endpoint and this documentation).
+\item \textbf{Operator / deployer:} the person who runs the backend (locally or on Railway), configures optional API keys and Telegram delivery, and trains the models.
+\end{itemize}
+
+\section{Requirements Identification Technique}
+\begin{itemize}
+\item \textbf{Comparative study:} existing platforms (Chapter~\ref{ch:literature}) were analysed to identify missing features, such as plain-language risk explanations and honest model evaluation.
+\item \textbf{Use case modelling:} the main interactions of guests, registered users and external systems were modelled as use cases (Figure~\ref{fig:usecase}).
+\item \textbf{Prototyping and iteration:} the interface and analytics were built incrementally, with each feature reviewed in the running application before the next one was added.
+\item \textbf{Specification documents:} detailed written specifications were prepared for the liquidation tracker, the risk intelligence specialist and the orchestrator. They defined data-integrity rules such as ``never use fabricated data'' and ``label observed data clearly''.
+\end{itemize}
+
+\section{Functional Requirements}
+
+\subsection{Functional Requirement 1 -- Live Market Monitoring}
+\frtable{Description of FR-1 - Live market monitoring}{tab:fr1}{FR-1}{Live Market Monitoring}
+{The user shall see live prices, 24-hour change, high, low and volume for the tracked coins, and an interactive candlestick chart on 15-minute, 1-hour, 4-hour and 1-day intervals.}
+{The system shall load a real snapshot from Binance REST, stream live tickers over WebSocket, and show ``unavailable'' with automatic retry if Binance cannot be reached.}
+{Comparative study of market data platforms; data-integrity specification.}
+{Live, trustworthy prices are the basis of every other feature.}
+{No simulated or hardcoded prices may be shown in place of real data.}
+{Binance public API.}
+{High}
+
+\subsection{Functional Requirement 2 -- AI Market Signals}
+\frtable{Description of FR-2 - AI market signals}{tab:fr2}{FR-2}{AI Market Signals}
+{The user shall see, for each tracked coin, whether the next 24 hours are classified as bullish, bearish or neutral, with the model score, the individual model votes and the reasons.}
+{The system shall build 18 features from real hourly candles, futures funding, the Fear and Greed index and Bitcoin's trend, and run the XGBoost and LightGBM ensemble. If any input is missing or no trained model exists, it shall report the signal as unavailable and list the missing inputs.}
+{Machine learning research review; project objectives PO2.}
+{Gives users a second opinion that is transparent about its inputs and limitations.}
+{Directional calls with a top score below 0.55 are shown as neutral.}
+{FR-1, trained model files.}
+{High}
+
+\subsection{Functional Requirement 3 -- Explainable Risk Score and Risk Copilot}
+\frtable{Description of FR-3 - Explainable risk score and Risk Copilot}{tab:fr3}{FR-3}{Explainable Risk Score and Risk Copilot}
+{The user shall see a 0--100\% risk score and level for each coin, the seven factors behind it, model agreement, similar historical periods, observed key levels and a volatility what-if simulation.}
+{The system shall compute the score from seven weighted factors (price swings 30, trend 15, AI model view 15, momentum stretch 10, crowded trades 10, market mood 10, Bitcoin trend 10), store a history at most every 30 minutes, find historical twins with nearest-neighbour search, and recompute the score for a changed volatility.}
+{Problem statement; user need for understandable risk.}
+{Users can see why a coin is risky instead of receiving an unexplained number.}
+{Levels: below 35 low, 35--59 moderate, 60 or above high. Historical twins are descriptive, not forecasts.}
+{FR-2.}
+{High}
+
+\subsection{Functional Requirement 4 -- Conversational Risk Copilot (Sage)}
+\frtable{Description of FR-4 - Conversational Risk Copilot}{tab:fr4}{FR-4}{Conversational Risk Copilot (Sage)}
+{The user shall ask questions in English, Urdu or Roman Urdu and receive a short, beginner-friendly answer with sources and the status of six specialist analysts.}
+{The system shall gather live context, run six specialists (market, derivatives, on-chain, sentiment and news, risk, explanation), retrieve relevant knowledge with TF-IDF search, and generate the answer with Claude, then an OpenAI-compatible model, then rules, in that order of availability.}
+{Problem statement; grounded assistant research.}
+{Lets beginners ask about the market in their own words.}
+{The assistant never tells the user to buy or sell and treats unavailable data literally.}
+{FR-1, FR-2, FR-3, FR-6, FR-7.}
+{High}
+
+\subsection{Functional Requirement 5 -- Liquidation Intelligence}
+\frtable{Description of FR-5 - Liquidation intelligence}{tab:fr5}{FR-5}{Liquidation Intelligence}
+{The user shall view observed liquidations for 5-minute, 15-minute, 1-hour, 4-hour and 24-hour windows, filtered by coin, with totals, long/short split and ratio, the largest event, the most affected coin, charts, spike detection, market context and an AI explanation.}
+{The system shall consume the Binance forceOrder stream, validate and de-duplicate events, classify forced SELL orders as long liquidations and forced BUY orders as short liquidations, store them for seven days, and compute statistics, robust-z anomalies and context from price, open interest and funding.}
+{Liquidation tracker specification.}
+{Liquidations reveal forced deleveraging that often accompanies sharp moves.}
+{All figures are labelled as observed stream data; a spike needs both a robust z-score of at least 4 and at least \$250{,}000 of activity (configurable).}
+{Binance USD-M futures API; FR-9.}
+{High}
+
+\subsection{Functional Requirement 6 -- News and Sentiment}
+\frtable{Description of FR-6 - News and sentiment}{tab:fr6}{FR-6}{News and Sentiment}
+{The user shall read recent crypto headlines tagged bullish, bearish or neutral, with the coins mentioned and Sage's take, and filter them by sentiment.}
+{The system shall collect headlines from RSS feeds (or CryptoPanic when configured) every 15 minutes, score them with VADER and a crypto lexicon (or Jev when configured), and add them to the knowledge base.}
+{Comparative study of sentiment platforms.}
+{News often moves prices; sentiment adds context to the risk view.}
+{If no feed is reachable, news is reported as unavailable; no sample headlines are shown.}
+{Internet access to news sources.}
+{Medium}
+
+\subsection{Functional Requirement 7 -- Whale and Smart-Money Tracking}
+\frtable{Description of FR-7 - Whale and smart-money tracking}{tab:fr7}{FR-7}{Whale and Smart-Money Tracking}
+{The user shall see large on-chain transfers with exchange inflow and outflow totals, and trades by members of Congress and company insiders in crypto-linked stocks.}
+{The system shall query Whale Alert and Quiver Quantitative when their keys are configured and classify each transfer as exchange inflow, outflow or wallet-to-wallet.}
+{Comparative study of on-chain platforms.}
+{Large holders can influence supply on exchanges.}
+{Transfers are presented as observations, not as proof of buying or selling. Without keys the feeds are unavailable.}
+{Whale Alert and Quiver API keys (optional).}
+{Medium}
+
+\subsection{Functional Requirement 8 -- Portfolio and Profit/Loss Limits}
+\frtable{Description of FR-8 - Portfolio and profit/loss limits}{tab:fr8}{FR-8}{Portfolio and Profit/Loss Limits}
+{The user shall add holdings with amount and average buy price, see their value and profit or loss at live prices, and set a stop-loss and take-profit percentage per coin.}
+{The system shall value holdings at live prices, flag holdings whose live price is unavailable, and notify the user when a limit is reached.}
+{User need for risk management.}
+{Encourages deciding exit points before emotions do.}
+{A holding without a live price is clearly flagged instead of silently valued at its buy price.}
+{FR-1, FR-9, FR-11.}
+{High}
+
+\subsection{Functional Requirement 9 -- Alerts and Notifications}
+\frtable{Description of FR-9 - Alerts and notifications}{tab:fr9}{FR-9}{Alerts and Notifications}
+{The user shall create alerts when a price rises above or falls below a value, moves by a percentage in 24 hours, when risk reaches a threshold, or for liquidation events (large liquidation, spike, long spike, short spike, imbalance shift), and receive in-app and Telegram notifications.}
+{The system shall check active alerts every 30 seconds; price and risk alerts fire once, while liquidation alerts re-arm after a configurable cooldown (30 minutes by default).}
+{Liquidation tracker specification; user need.}
+{Users do not have to watch the market all the time.}
+{Liquidation alerts require login because they are evaluated by the backend.}
+{FR-1, FR-3, FR-5, FR-11; Telegram Bot API (optional).}
+{High}
+
+\subsection{Functional Requirement 10 -- Paper Trading}
+\frtable{Description of FR-10 - Paper trading}{tab:fr10}{FR-10}{Paper Trading}
+{The user shall practise buying and selling with 10{,}000 pretend dollars at real live prices and review the trade history and statistics.}
+{The system shall apply a 0.1\% fee per trade, record each trade with the risk level and trend at the time, and pause trading when live prices are unavailable.}
+{User need for safe practice.}
+{Lets beginners learn without risking money.}
+{Trades are only executed at live prices.}
+{FR-1, FR-3, FR-11.}
+{Medium}
+
+\subsection{Functional Requirement 11 -- User Accounts and Authentication}
+\frtable{Description of FR-11 - User accounts and authentication}{tab:fr11}{FR-11}{User Accounts and Authentication}
+{The user shall register, log in and stay logged in, so that the portfolio, alerts and paper account are saved.}
+{The system shall store passwords as bcrypt hashes, issue JSON Web Tokens valid for seven days, and protect personal endpoints with bearer authentication.}
+{Security requirements.}
+{Personal data must be private and persistent.}
+{Guests can use all public analytics without an account.}
+{Database.}
+{High}
+
+\subsection{Functional Requirement 12 -- New Listings and Academy}
+\frtable{Description of FR-12 - New listings and Academy}{tab:fr12}{FR-12}{New Listings and Academy}
+{The user shall see coins listed on Binance in the last 60 days with their change since listing and a risk rating, and learn market concepts step by step in the Academy.}
+{The system shall refresh listings every six hours from Binance and rate each listing by volatility and volume; Academy content is also loaded into the assistant's knowledge base.}
+{User need for education and discovery.}
+{New coins are especially risky; education reduces mistakes.}
+{Listing risk ratings are descriptive and not recommendations.}
+{Binance public API.}
+{Medium}
+
+\section{Non-Functional Requirements}
+\subsection{Reliability and Data Integrity}
+REL-1: The system shall never display fabricated, simulated or hardcoded market values as live data. Missing inputs shall be reported as unavailable.\\
+REL-2: The liquidation stream shall reconnect automatically after an error or 300 seconds without messages, and record the disconnected period.\\
+REL-3: Stored liquidation history shall survive backend restarts, and statistics shall state whether a time window was fully observed.\\
+REL-4: Machine learning evaluation shall use a chronological split with gaps, and training shall use only hours with real (not filled-in) context data.
+
+\subsection{Usability}
+USE-1: Every analytical panel shall include a plain-language explanation or a lightbulb help button.\\
+USE-2: A first-time user shall be guided by a short Sage tour.\\
+USE-3: The assistant shall answer in the user's language (English, Urdu or Roman Urdu).
+
+\subsection{Performance}
+PER-1: Live prices shall refresh at most about once per second in the interface (WebSocket updates are throttled).\\
+PER-2: Signals shall be cached for five minutes and prices for five seconds to avoid repeated external calls.\\
+PER-3: Liquidation statistics shall be computed with SQL aggregation and indexed queries so that 24-hour windows remain responsive.
+
+\subsection{Security}
+SEC-1: Passwords shall be stored only as bcrypt hashes.\\
+SEC-2: Personal endpoints shall require a valid JSON Web Token.\\
+SEC-3: API keys and tokens shall be read from environment variables and never committed to source control or shown in the interface.\\
+SEC-4: Text inside market data, headlines and specialist reports shall be treated as data, not as instructions, by the language model.
+
+\section{External Interface Requirements}
+\subsection{User Interfaces Requirements}
+\begin{itemize}
+\item UI-1: The interface shall use a consistent dark theme with a left navigation sidebar grouped into Markets, Your money, Discover, Learn and Practice.
+\item UI-2: The top bar shall show the page title, live BTC and ETH prices, a Live/Offline status badge, the time and a sign-in button.
+\item UI-3: Charts shall show tooltips on hover and support time-window and coin filters.
+\item UI-4: Error and unavailable states shall use simple language, for example ``Live market data unavailable''.
+\item UI-5: The layout shall adapt to narrow screens by moving the sidebar into a drawer.
+\end{itemize}
+
+\subsection{Software Interfaces}
+SI-1: Backend: Python 3.11, FastAPI, Uvicorn, SQLAlchemy 2, Pydantic 2.\\
+SI-2: Machine learning: XGBoost, LightGBM, scikit-learn, pandas, NumPy.\\
+SI-3: Database: SQLite for local use and PostgreSQL (psycopg) for deployment.\\
+SI-4: Frontend: Flutter (Dart) for the web, with the http, web\_socket\_channel, shared\_preferences, fl\_chart, intl and google\_fonts packages.\\
+SI-5: Language models: Anthropic Python SDK (Claude) and any OpenAI-compatible chat-completions API (Groq by default).
+
+\subsection{Hardware Interfaces}
+HI-1: The client requires a modern web browser on a desktop, laptop or mobile device.\\
+HI-2: The backend requires a computer or cloud instance with at least 4 GB RAM; model training benefits from 8 GB RAM.
+
+\subsection{Communications Interfaces}
+CI-1: The client and backend communicate over HTTPS using JSON.\\
+CI-2: Live prices and liquidations are received over secure WebSockets (WSS) from Binance.\\
+CI-3: Alerts are delivered to Telegram through the Telegram Bot API over HTTPS when configured.
+
+\section{Chapter Summary}
+This chapter identified the user classes of CryptoSense AI and specified twelve functional requirements covering market monitoring, AI signals, explainable risk, the conversational copilot, liquidation intelligence, news, whale tracking, portfolio limits, alerts, paper trading, authentication and listings. It also defined reliability, data-integrity, usability, performance and security requirements, and the external interfaces of the system. The next chapter presents the design and architecture that satisfy these requirements.

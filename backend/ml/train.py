@@ -1,16 +1,16 @@
-"""Train the CryptoSense AI market-state models.
+"""Train the CryptoSense AI market-state models (XGBoost + LightGBM ensemble).
 
-    python -m ml.train                 # real data: Binance candles + funding, Fear & Greed (needs internet)
-    python -m ml.train --demo          # synthetic data, offline test only
-    python -m ml.train --no-gru        # skip the deep-learning model (if PyTorch isn't installed)
-    python -m ml.train --days 730 --horizon 24 --threshold 1.5 --epochs 15
+    python -m ml.train                          # real Binance data, 10 years requested (needs internet)
+    python -m ml.train --days 3650 --horizon 24 --threshold 2.5
+    python -m ml.train --out ml/models/candidate   # save elsewhere to compare before replacing
 
 Pipeline
 1. Data: hourly candles (with taker-buy volume), futures funding rates, Fear & Greed, BTC trend.
+   Only hours where funding and Fear & Greed were really observed are used (no filled-in values).
 2. Features + label (next `horizon` hours: > +threshold% bullish, < -threshold% bearish, else neutral).
 3. Chronological split per coin: 70% train | 15% validation | 15% test, with a `horizon` gap
    between parts so no future label leaks into training.
-4. Models: XGBoost, LightGBM (early stopping on validation) and a GRU network (PyTorch).
+4. Models: XGBoost and LightGBM (early stopping on validation).
 5. Ensemble: probabilities averaged, weighted by each model's validation macro-F1.
 6. Report on the untouched test set vs a majority-class baseline; save models + metrics.json.
 """
@@ -34,14 +34,44 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.config import settings  # noqa: E402
-from app.services import demo  # noqa: E402
 from app.services.binance import funding_frame, to_frame  # noqa: E402
-from app.services.deep import TORCH, WINDOW  # noqa: E402
 from app.services.features import FEATURES, LABELS, add_features, add_labels, merge_context  # noqa: E402
 from app.services.sentiment_index import fng_frame  # noqa: E402
 
 MODEL_DIR = ROOT / "ml" / "models"
-NAMES = {"xgb": "XGBoost", "lgbm": "LightGBM", "gru": "GRU", "ensemble": "Ensemble"}
+NAMES = {"xgb": "XGBoost", "lgbm": "LightGBM", "ensemble": "Ensemble", "ensemble_tuned": "Ensemble (tuned)"}
+
+
+# ------------------------------------------------------------------ decision tuning
+def apply_bias(proba: np.ndarray, bias: list[float]) -> np.ndarray:
+    """Multiply each class probability by its bias and renormalise (same code idea as the app)."""
+    p = proba * np.asarray(bias, dtype=float)
+    return p / p.sum(1, keepdims=True)
+
+
+def tune_class_bias(y: np.ndarray, proba: np.ndarray) -> list[float]:
+    """Grid-search bearish/bullish multipliers (neutral = 1) on validation data.
+    Score = average of accuracy and macro-F1, so the model stops over-calling moves (higher
+    accuracy) without collapsing into 'always neutral' (macro-F1 would drop)."""
+    best, best_score = [1.0, 1.0, 1.0], -1.0
+    grid = np.round(np.arange(0.2, 1.51, 0.05), 2)
+    for b_bear in grid:
+        for b_bull in grid:
+            pred = apply_bias(proba, [b_bear, 1.0, b_bull]).argmax(1)
+            score = (accuracy_score(y, pred) + f1_score(y, pred, average="macro")) / 2
+            if score > best_score:
+                best, best_score = [float(b_bear), 1.0, float(b_bull)], score
+    return best
+
+
+def confidence_table(y: np.ndarray, proba: np.ndarray) -> list[dict]:
+    pred, conf = proba.argmax(1), proba.max(1)
+    rows = []
+    for t in (0.0, 0.5, 0.6, 0.7, 0.8):
+        m = conf >= t
+        rows.append({"min_confidence": t, "coverage": round(float(m.mean()), 4),
+                     "accuracy": round(float(accuracy_score(y[m], pred[m])), 4) if m.any() else None})
+    return rows
 
 
 # ------------------------------------------------------------------ data download
@@ -100,27 +130,31 @@ def download_fng() -> pd.DataFrame | None:
 def load_data(args) -> list[pd.DataFrame]:
     """One labelled feature table per coin."""
     tables = []
-    if args.demo:
-        n = args.days * 24
-        btc = demo.candles("BTCUSDT", n, seed=1)
-        fng = demo.fear_greed(btc["time"])
-        for i, symbol in enumerate(settings.symbol_list):
-            df = btc if symbol == "BTCUSDT" else demo.candles(symbol, n, seed=i + 1)
-            tables.append((symbol, df, demo.funding(df["time"], seed=i + 10), fng, btc))
-    else:
-        print("  downloading Fear & Greed history ...")
-        fng = download_fng()
-        print("  downloading BTCUSDT (market context) ...")
-        btc = download_klines("BTCUSDT", args.days)
-        for symbol in settings.symbol_list:
-            print(f"  downloading {symbol} ...", end=" ", flush=True)
-            df = btc if symbol == "BTCUSDT" else download_klines(symbol, args.days)
-            print(f"{len(df)} candles")
-            tables.append((symbol, df, download_funding(symbol, args.days), fng, btc))
+    print("  downloading Fear & Greed history ...")
+    fng = download_fng()
+    print("  downloading BTCUSDT (market context) ...")
+    btc = download_klines("BTCUSDT", args.days)
+    for symbol in settings.symbol_list:
+        print(f"  downloading {symbol} ...", end=" ", flush=True)
+        df = btc if symbol == "BTCUSDT" else download_klines(symbol, args.days)
+        print(f"{len(df)} candles")
+        tables.append((symbol, df, download_funding(symbol, args.days), fng, btc))
 
     out = []
     for symbol, df, funding, fng, btc in tables:
-        data = add_labels(add_features(merge_context(df, funding, fng, btc)), args.horizon, args.threshold)
+        merged = merge_context(df, funding, fng, btc)
+        # Only keep hours where funding and Fear & Greed were really observed (Binance futures
+        # funding starts in 2019-2020, Fear & Greed in 2018); filled-in values are never trained on.
+        real = pd.Series(True, index=merged.index)
+        for col in ("funding_rate", "fng"):
+            real &= merged[col].notna() if col in merged else False
+        data = add_labels(add_features(merged), args.horizon, args.threshold)
+        data = data[real.to_numpy()]
+        if data.empty:
+            print(f"  {symbol}: no hours with real funding + Fear & Greed data; skipped")
+            continue
+        print(f"  {symbol}: training data with real inputs starts {pd.Timestamp(data['time'].iloc[0]).date()} "
+              f"({(~real).sum()} earlier/missing hours dropped)")
         data = data.dropna(subset=FEATURES + ["label"]).reset_index(drop=True)
         data["label"] = data["label"].astype(int)
         data["symbol"] = symbol
@@ -154,99 +188,23 @@ def report(name: str, y: np.ndarray, proba: np.ndarray) -> dict:
     }
 
 
-# ------------------------------------------------------------------ GRU (deep learning)
-def train_gru(tables: list[pd.DataFrame], ranges: list[dict], args):
-    """Returns (GRUModel, val_proba, test_proba)."""
-    import torch
-    from torch import nn
-    from torch.utils.data import DataLoader, Dataset
-
-    from app.services.deep import GRUModel, GRUNet
-
-    torch.manual_seed(42)
-    np.random.seed(42)
-
-    train_rows = np.concatenate([t[FEATURES].to_numpy()[r["train"][0]:r["train"][1]] for t, r in zip(tables, ranges)])
-    mean, std = train_rows.mean(0), train_rows.std(0) + 1e-8
-    arrays = [((t[FEATURES].to_numpy() - mean) / std).astype(np.float32) for t in tables]
-    labels = [t["label"].to_numpy().astype(np.int64) for t in tables]
-
-    def index(part: str) -> list[tuple[int, int]]:
-        return [(k, i) for k, r in enumerate(ranges) for i in range(max(r[part][0], WINDOW - 1), r[part][1])]
-
-    class Windows(Dataset):
-        def __init__(self, idx):
-            self.idx = idx
-
-        def __len__(self):
-            return len(self.idx)
-
-        def __getitem__(self, j):
-            k, i = self.idx[j]
-            return torch.from_numpy(arrays[k][i - WINDOW + 1: i + 1]), int(labels[k][i])
-
-    train_idx, val_idx, test_idx = index("train"), index("val"), index("test")
-    train_dl = DataLoader(Windows(train_idx), batch_size=256, shuffle=True)
-
-    y_train = np.array([labels[k][i] for k, i in train_idx])
-    counts = np.bincount(y_train, minlength=3).astype(np.float32)
-    class_w = torch.tensor(len(y_train) / (3 * np.maximum(counts, 1)), dtype=torch.float32)
-
-    net = GRUNet(len(FEATURES), hidden=args.gru_hidden)
-    opt = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=1e-5)
-    loss_fn = nn.CrossEntropyLoss(weight=class_w)
-
-    def predict(idx) -> np.ndarray:
-        net.eval()
-        out = []
-        with torch.no_grad():
-            for xb, _ in DataLoader(Windows(idx), batch_size=1024):
-                out.append(torch.softmax(net(xb), dim=1).numpy())
-        return np.concatenate(out)
-
-    y_val = np.array([labels[k][i] for k, i in val_idx])
-    best_f1, best_state, bad = -1.0, None, 0
-    for epoch in range(1, args.epochs + 1):
-        net.train()
-        t0, total = time.time(), 0.0
-        for xb, yb in train_dl:
-            opt.zero_grad()
-            loss = loss_fn(net(xb), yb)
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            opt.step()
-            total += float(loss) * len(yb)
-        f1 = f1_score(y_val, predict(val_idx).argmax(1), average="macro")
-        print(f"  epoch {epoch:2d}  loss {total / len(train_idx):.4f}  val macro-F1 {f1:.4f}  ({time.time() - t0:.0f}s)")
-        if f1 > best_f1:
-            best_f1, best_state, bad = f1, {k: v.clone() for k, v in net.state_dict().items()}, 0
-        else:
-            bad += 1
-            if bad >= args.patience:
-                print("  early stopping")
-                break
-    net.load_state_dict(best_state)
-    net.eval()
-    return GRUModel(net, mean, std, FEATURES), predict(val_idx), predict(test_idx)
-
-
 # ------------------------------------------------------------------ main
 def main() -> None:
     p = argparse.ArgumentParser(description="Train CryptoSense AI models")
-    p.add_argument("--days", type=int, default=730, help="days of hourly history per coin")
+    p.add_argument("--days", type=int, default=3650, help="days of hourly history per coin (default 10 years; Binance data starts 2017, futures funding 2019-2020)")
     p.add_argument("--horizon", type=int, default=24, help="hours ahead the label looks")
     p.add_argument("--threshold", type=float, default=1.5, help="%% move that counts as bullish/bearish")
-    p.add_argument("--epochs", type=int, default=15, help="max GRU epochs")
-    p.add_argument("--patience", type=int, default=4, help="GRU early-stopping patience")
-    p.add_argument("--gru-hidden", type=int, default=64)
-    p.add_argument("--no-gru", action="store_true", help="skip the deep-learning model")
-    p.add_argument("--demo", action="store_true", help="synthetic data (offline test only)")
+    p.add_argument("--out", default=None,
+                   help="folder to save models in (default ml/models; use another folder to compare first)")
     args = p.parse_args()
+    global MODEL_DIR
+    if args.out:
+        MODEL_DIR = Path(args.out).resolve()
 
-    print(f"Building dataset ({'DEMO' if args.demo else 'live Binance'} data, {args.days} days, "
+    print(f"Building dataset (live Binance data, {args.days} days, "
           f"horizon {args.horizon}h, threshold {args.threshold}%)")
     tables = load_data(args)
-    gap = max(args.horizon, WINDOW)
+    gap = args.horizon
     ranges = [split_ranges(len(t), gap) for t in tables]
 
     def part(name: str) -> pd.DataFrame:
@@ -282,23 +240,24 @@ def main() -> None:
     val_proba["lgbm"], test_proba["lgbm"] = lgbm.predict_proba(X_va), lgbm.predict_proba(X_te)
     joblib.dump(lgbm, MODEL_DIR / "lgbm.joblib")
 
-    if args.no_gru:
-        print("Skipping GRU (--no-gru).")
-    elif not TORCH:
-        print("Skipping GRU: PyTorch is not installed (see requirements-ai.txt).")
-    else:
-        print(f"\nTraining GRU (window {WINDOW}h, up to {args.epochs} epochs) ...")
-        gru, val_proba["gru"], test_proba["gru"] = train_gru(tables, ranges, args)
-        gru.save(MODEL_DIR / "gru.pt")
-
     # Ensemble weights = validation macro-F1 of each model
     weights = {k: round(float(f1_score(y_va, v.argmax(1), average="macro")), 4) for k, v in val_proba.items()}
     wsum = sum(weights.values())
     val_proba["ensemble"] = sum(weights[k] * val_proba[k] for k in weights) / wsum
     test_proba["ensemble"] = sum(weights[k] * test_proba[k] for k in weights) / wsum
 
+    # Decision tuning (on VALIDATION only, test stays untouched): scale the bearish/bullish
+    # probabilities so the ensemble balances accuracy and macro-F1 instead of over-calling moves.
+    class_bias = tune_class_bias(y_va, val_proba["ensemble"])
+    print(f"\nTuned class bias (from validation): {class_bias}")
+    test_proba["ensemble_tuned"] = apply_bias(test_proba["ensemble"], class_bias)
+
     for key in test_proba:
         results[key] = report(NAMES[key], y_te, test_proba[key])
+    results["confidence_table_test"] = confidence_table(y_te, test_proba["ensemble_tuned"])
+    print("\nTuned ensemble on test, by confidence (higher confidence = fewer but better calls):")
+    for row in results["confidence_table_test"]:
+        print(f"  conf >= {row['min_confidence']:.2f}: coverage {row['coverage']:.1%}, accuracy {row['accuracy']}")
 
     majority = int(np.bincount(y_tr, minlength=3).argmax())
     base_pred = np.full_like(y_te, majority)
@@ -312,7 +271,8 @@ def main() -> None:
     importance = pd.Series(xgb.feature_importances_, index=FEATURES).sort_values(ascending=False)
     metrics = {
         "trained_at": datetime.now(timezone.utc).isoformat(),
-        "data": "demo" if args.demo else "binance",
+        "data": "binance",
+        "data_start": {t["symbol"].iloc[0]: str(pd.Timestamp(t["time"].iloc[0]).date()) for t in tables},
         "symbols": settings.symbol_list,
         "days": args.days, "interval": "1h",
         "horizon_hours": args.horizon, "threshold_pct": args.threshold,
@@ -321,6 +281,7 @@ def main() -> None:
         "rows": {"train": int(len(X_tr)), "validation": int(len(X_va)), "test": int(len(X_te))},
         "class_balance_train": balance,
         "ensemble_weights": weights,
+        "class_bias": class_bias,
         "results": results,
         "feature_importance_xgb": {k: round(float(v), 4) for k, v in importance.items()},
     }
@@ -328,10 +289,10 @@ def main() -> None:
 
     print("\nSummary (test set, macro F1):")
     for k, r in results.items():
+        if not isinstance(r, dict):
+            continue
         print(f"  {NAMES.get(k, 'Baseline'):10s} {r['macro_f1']:.3f}   accuracy {r['accuracy']:.3f}")
     print(f"Saved to {MODEL_DIR}")
-    if args.demo:
-        print("NOTE: synthetic data. Run without --demo for real results.")
 
 
 if __name__ == "__main__":

@@ -91,7 +91,7 @@ class MarketIntelligenceAgent:
                 )
         status = "available" if all(r["ticker_live"] and r["signal_live"] for r in rows) else "partial"
         if status == "partial":
-            lines.append("Some figures use fallback/demo data; check the live flags before relying on them.")
+            lines.append("Some live figures are missing (price or AI signal unavailable); check the live flags.")
         return _report(cls.name, status, " ".join(lines), {"markets": rows})
 
 
@@ -178,7 +178,7 @@ class OnChainAgent:
             return _report(
                 OnChainAgent.name,
                 "unavailable",
-                "No live on-chain feed is configured; demo transfers were excluded from the analysis.",
+                "No live on-chain feed is available (Whale Alert key missing or provider unreachable).",
                 {"source": snapshot["source"], "live_transfer_count": 0},
             )
         items = snapshot["items"]
@@ -210,7 +210,7 @@ class SentimentNewsAgent:
             log.warning("Fear & Greed unavailable: %s", fear_result.__class__.__name__)
             fear_result = None
         news_items = news_result["items"] if news_result else []
-        news_live = bool(news_result and news_result["source"] != "demo")
+        news_live = bool(news_result and news_result["source"] not in ("demo", "unavailable"))
         counts = {label: sum(item.get("sentiment") == label for item in news_items)
                   for label in ("bullish", "neutral", "bearish")}
         mood = None
@@ -226,7 +226,7 @@ class SentimentNewsAgent:
             )
             parts.append("Recent headlines: " + " | ".join(item["title"] for item in usable_news[:2]))
         else:
-            parts.append("No live news headlines are available; demo headlines were excluded.")
+            parts.append("No live news headlines are available right now.")
         if mood:
             parts.append(f"Fear & Greed is {mood['value']} ({mood['label']}).")
         else:
@@ -298,7 +298,7 @@ class RiskAssessmentAgent:
             else:
                 summaries.append(f"{row['symbol']} uses {row['model']}; individual model votes are unavailable.")
         if any(not row["live"] for row in rows):
-            summaries.append("At least one score uses fallback/demo candles.")
+            summaries.append("At least one score is not based on live data.")
         status = "available" if all(row["live"] for row in rows) else "partial"
         return _report(cls.name, status, " ".join(summaries), {"markets": rows})
 

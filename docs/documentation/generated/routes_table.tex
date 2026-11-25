@@ -1,0 +1,54 @@
+{\renewcommand{\arraystretch}{1.25}\small
+\begin{longtable}{|>{\centering\arraybackslash}p{0.11\linewidth}|p{0.42\linewidth}|p{0.37\linewidth}|}
+\caption{\routecaption}\\\hline\textbf{HTTP} & \textbf{Path} & \textbf{Handler / Source}\\\hline\endfirsthead
+\multicolumn{3}{c}{\small\textit{Table \thetable{} -- continued from previous page}}\\\hline
+\textbf{HTTP} & \textbf{Path} & \textbf{Handler / Source}\\\hline\endhead
+GET & \texttt{/\allowbreak{}} & \texttt{root} (main.py:77)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}alerts} & \texttt{list\_\allowbreak{}alerts} (alerts.py:22)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}alerts} & \texttt{create\_\allowbreak{}alert} (alerts.py:27)\\\hline
+DELETE & \texttt{/\allowbreak{}api/\allowbreak{}alerts/\allowbreak{}\{alert\_\allowbreak{}id\}} & \texttt{delete\_\allowbreak{}alert} (alerts.py:47)\\\hline
+PATCH & \texttt{/\allowbreak{}api/\allowbreak{}alerts/\allowbreak{}\{alert\_\allowbreak{}id\}/\allowbreak{}toggle} & \texttt{toggle\_\allowbreak{}alert} (alerts.py:36)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}auth/\allowbreak{}login} & \texttt{login} (auth.py:31)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}auth/\allowbreak{}me} & \texttt{me} (auth.py:39)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}auth/\allowbreak{}register} & \texttt{register} (auth.py:19)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}chat} & \texttt{chat} (chat.py:25)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}chat/\allowbreak{}agents} & \texttt{specialist\_\allowbreak{}agents} (chat.py:49)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}chat/\allowbreak{}knowledge} & \texttt{knowledge\_\allowbreak{}status} (chat.py:55)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}chat/\allowbreak{}knowledge/\allowbreak{}rebuild} & \texttt{rebuild\_\allowbreak{}knowledge} (chat.py:61)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations} & \texttt{liquidations} (discover.py:52)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}anomalies} & \texttt{anomalies} (liquidations.py:54)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}context/\allowbreak{}\{symbol\}} & \texttt{context} (liquidations.py:66)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}explain} & \texttt{explain} (liquidations.py:74)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}history} & \texttt{history} (liquidations.py:45)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}stats} & \texttt{stats} (liquidations.py:29)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}status} & \texttt{stream\_\allowbreak{}status} (liquidations.py:23)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}liquidations/\allowbreak{}timeline} & \texttt{timeline} (liquidations.py:37)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}listings} & \texttt{listings} (discover.py:64)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}market/\allowbreak{}klines} & \texttt{klines} (market.py:23)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}market/\allowbreak{}sentiment} & \texttt{market\_\allowbreak{}sentiment} (market.py:35)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}market/\allowbreak{}tickers} & \texttt{tickers} (market.py:17)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}news} & \texttt{news} (discover.py:14)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}news/\allowbreak{}compare} & \texttt{news\_\allowbreak{}compare} (discover.py:22)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}notifications} & \texttt{notifications} (alerts.py:53)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}notifications/\allowbreak{}seen} & \texttt{mark\_\allowbreak{}seen} (alerts.py:61)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}paper} & \texttt{my\_\allowbreak{}account} (paper.py:71)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}paper/\allowbreak{}reset} & \texttt{reset\_\allowbreak{}account} (paper.py:123)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}paper/\allowbreak{}trade} & \texttt{place\_\allowbreak{}trade} (paper.py:77)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}paper/\allowbreak{}trades} & \texttt{trade\_\allowbreak{}history} (paper.py:115)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}portfolio} & \texttt{get\_\allowbreak{}portfolio} (portfolio.py:43)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}portfolio} & \texttt{add\_\allowbreak{}holding} (portfolio.py:48)\\\hline
+DELETE & \texttt{/\allowbreak{}api/\allowbreak{}portfolio/\allowbreak{}\{symbol\}} & \texttt{remove\_\allowbreak{}holding} (portfolio.py:63)\\\hline
+PUT & \texttt{/\allowbreak{}api/\allowbreak{}portfolio/\allowbreak{}\{symbol\}/\allowbreak{}limits} & \texttt{set\_\allowbreak{}limits} (portfolio.py:73)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}quiver} & \texttt{quiver\_\allowbreak{}smart\_\allowbreak{}money} (discover.py:58)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}risk} & \texttt{all\_\allowbreak{}risks} (risk.py:41)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}risk/\allowbreak{}portfolio} & \texttt{portfolio\_\allowbreak{}risk} (risk.py:47)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}risk/\allowbreak{}\{symbol\}} & \texttt{one\_\allowbreak{}risk} (risk.py:55)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}risk/\allowbreak{}\{symbol\}/\allowbreak{}copilot} & \texttt{risk\_\allowbreak{}copilot} (risk.py:66)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}risk/\allowbreak{}\{symbol\}/\allowbreak{}history} & \texttt{risk\_\allowbreak{}history} (risk.py:118)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}risk/\allowbreak{}\{symbol\}/\allowbreak{}simulate} & \texttt{simulate\_\allowbreak{}risk} (risk.py:98)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}signals} & \texttt{signals} (signals.py:12)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}signals/\allowbreak{}model-info} & \texttt{model\_\allowbreak{}info} (signals.py:17)\\\hline
+POST & \texttt{/\allowbreak{}api/\allowbreak{}signals/\allowbreak{}reload} & \texttt{reload\_\allowbreak{}models} (signals.py:23)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}signals/\allowbreak{}\{symbol\}} & \texttt{one\_\allowbreak{}signal} (signals.py:30)\\\hline
+GET & \texttt{/\allowbreak{}api/\allowbreak{}whales} & \texttt{whales} (discover.py:47)\\\hline
+\end{longtable}}

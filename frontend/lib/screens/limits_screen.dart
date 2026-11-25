@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../services/app_scope.dart';
-import '../services/mock_data.dart';
+import '../services/coins.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
@@ -92,12 +92,13 @@ class _LimitCardState extends State<_LimitCard> {
   Widget build(BuildContext context) {
     final h = widget.holding;
     final market = context.market;
-    final name = MockData.names[h.symbol] ?? h.base;
+    final name = coinName(h.symbol);
 
     return ListenableBuilder(
       listenable: market,
       builder: (context, _) {
-        final price = market.tickers[h.symbol]?.price ?? h.avgBuy;
+        final live = market.tickers[h.symbol]?.price;
+        final price = live ?? h.avgBuy; // no live price: shown as unavailable below
         final pnlPct = (price - h.avgBuy) / h.avgBuy * 100;
         final invested = h.amount * h.avgBuy;
         final stopPrice = h.avgBuy * (1 - _stop / 100);
@@ -106,7 +107,8 @@ class _LimitCardState extends State<_LimitCard> {
         return Panel(
           title: name,
           subtitle:
-              '${Fmt.coin(h.amount)} ${h.base} bought at ${Fmt.usd(h.avgBuy)}. Now ${Fmt.usd(price)} (${Fmt.pct(pnlPct)}).',
+              '${Fmt.coin(h.amount)} ${h.base} bought at ${Fmt.usd(h.avgBuy)}. '
+              '${live == null ? 'Live price unavailable.' : 'Now ${Fmt.usd(price)} (${Fmt.pct(pnlPct)}).'}',
           trailing: CoinAvatar(h.base, size: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

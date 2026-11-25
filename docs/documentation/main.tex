@@ -1,0 +1,119 @@
+% =====================================================================
+%  CryptoSense: AI-Based Cryptocurrency Analytics and Decision Support
+%  Final Year Project documentation, University of Kotli, Azad Jammu and Kashmir
+%  Updated edition: follows the structure of the previous documentation and
+%  records what was added, changed and removed since then.
+%
+%  Compile with pdfLaTeX (Overleaf: Menu -> Compiler -> pdfLaTeX).
+%  Compile TWICE so the table of contents and the lists are filled in.
+% =====================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ---------------------------------------------------------------- packages
+\usepackage[a4paper,top=1in,bottom=1in,left=1.5in,right=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}          % Times style, as in the previous edition
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array,tabularx,longtable,booktabs}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\onehalfspacing
+\graphicspath{{figures/}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist[itemize]{itemsep=2pt}
+
+% ------------------------------------------------- project details (EDIT if needed)
+\newcommand{\projecttitle}{CryptoSense: AI-Based Cryptocurrency\\ Analytics and Decision Support}
+\newcommand{\projecttitleinline}{CryptoSense: AI-Based Cryptocurrency Analytics and Decision Support}
+\newcommand{\studentA}{Muhammad Ali}
+\newcommand{\studentB}{Ilyas Hussain}
+\newcommand{\supervisor}{Mr. Sohail Akhtar}
+\newcommand{\cosupervisor}{Ma'am Syeda Seerat Zahra Naqvi}
+\newcommand{\designation}{Lecturer}
+\newcommand{\department}{Department of Data Science}
+\newcommand{\degree}{BS in Data Science}
+\newcommand{\degreelong}{Bachelor of Science in Data Science}
+\newcommand{\university}{University of Kotli, Azad Jammu and Kashmir}
+\newcommand{\universityshort}{University of Kotli}
+\newcommand{\city}{Kotli, Azad Jammu and Kashmir, Pakistan}
+\newcommand{\session}{FALL, 2026}
+\newcommand{\submissionmonth}{November, 2026}
+% University logo: put the file at figures/university_logo.png (a placeholder is shown until then).
+\newcommand{\unilogo}[1]{\IfFileExists{figures/university_logo.png}{\includegraphics[width=#1]{university_logo.png}}%
+  {\fbox{\parbox[c][#1][c]{#1}{\centering\footnotesize University\\logo}}}}
+
+% ------------------------------------------------------ captions and lists
+\captionsetup{labelsep=space,font=normalsize,justification=centering}
+\captionsetup[table]{position=bottom}
+\renewcommand{\cftfigpresnum}{Fig }
+\renewcommand{\cfttabpresnum}{Table }
+\setlength{\cftfignumwidth}{4.5em}
+\setlength{\cfttabnumwidth}{5.5em}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\contentsname}{TABLE OF CONTENTS}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\renewcommand{\listtablename}{LIST OF TABLES}
+\renewcommand{\cfttoctitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftaftertoctitle}{\hfill\vspace{-6pt}\par\noindent\rule{\linewidth}{1.2pt}}
+\renewcommand{\cftloftitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftafterloftitle}{\hfill\vspace{-6pt}\par\noindent\rule{\linewidth}{1.2pt}}
+\renewcommand{\cftlottitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftafterlottitle}{\hfill\vspace{-6pt}\par\noindent\rule{\linewidth}{1.2pt}}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% ------------------------------------------------------- heading styles
+% Each chapter opens with a page that shows only "Chapter N" and its title, centred.
+\titleformat{\chapter}[display]{\centering\normalfont\bfseries\Large}{\chaptertitlename\ \thechapter}{24pt}{\Large}
+\titlespacing*{\chapter}{0pt}{0.38\textheight}{0pt}
+\titleformat{name=\chapter,numberless}{\centering\normalfont\bfseries\Large}{}{0pt}{\Large}
+\titlespacing*{name=\chapter,numberless}{0pt}{0pt}{18pt}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+\newcommand{\fypchapter}[2]{\chapter{#1}\label{#2}\thispagestyle{empty}\clearpage}
+
+% ---------------------------------------------------------- helpers
+% \diagram{file in figures/}{caption}{label}{width}
+\newcommand{\diagram}[4]{%
+  \begin{figure}[H]\centering
+  \IfFileExists{figures/#1}{\includegraphics[width=#4,height=0.72\textheight,keepaspectratio]{#1}}{%
+    \fbox{\parbox[c][5cm][c]{0.8\linewidth}{\centering Add figure: \texttt{figures/\detokenize{#1}}}}}
+  \caption{#2}\label{#3}\end{figure}}
+\newcommand{\routecaption}{REST API route catalog.}
+% Status tags for the change log.
+\newcommand{\added}{\textbf{Added}}
+\newcommand{\removed}{\textbf{Removed}}
+\newcommand{\changed}{\textbf{Changed}}
+
+\begin{document}
+
+% ======================================================= front matter
+\pagenumbering{roman}
+\input{frontmatter}
+
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+% ======================================================= chapters
+\pagenumbering{arabic}
+\input{chapter1}
+\input{chapter2}
+
+\end{document}

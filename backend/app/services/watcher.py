@@ -14,7 +14,7 @@ from sqlalchemy import select
 from ..config import settings
 from ..database import SessionLocal
 from ..models import Alert, Holding, Notification
-from . import listings, liquidations, whales
+from . import liquidation_alerts, listings, liquidations, whales
 from .market import prices
 from .news import latest_news
 from .rag import kb
@@ -109,7 +109,18 @@ async def check_once() -> int:
 
         with SessionLocal() as db:
             active_alerts = db.scalars(select(Alert).where(Alert.active.is_(True))).all()
+            liq_alerts = [a for a in active_alerts if a.kind in liquidation_alerts.KINDS]
+            if liq_alerts:
+                try:
+                    for a, message in liquidation_alerts.evaluate(db, liq_alerts):
+                        db.add(Notification(user_id=a.user_id, kind="liquidation", message=message))
+                        telegram_messages.append(message)
+                        created += 1
+                except Exception as exc:
+                    log.warning("liquidation alert check failed: %s", exc)
             for a in active_alerts:
+                if a.kind in liquidation_alerts.KINDS:
+                    continue
                 if a.kind == "risk":
                     risk = risk_by_symbol.get(a.symbol)
                     if risk is None or risk["risk_pct"] < a.value:

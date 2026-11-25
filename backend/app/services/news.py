@@ -1,7 +1,8 @@
 """Crypto news with sentiment (FinBERT, or VADER as fallback).
 
 Source: CryptoPanic API when CRYPTOPANIC_KEY is set, otherwise the free
-CoinDesk and Cointelegraph RSS feeds. A demo list is used only when offline.
+CoinDesk and Cointelegraph RSS feeds. If no feed can be reached, latest_news() reports
+"unavailable"; no made-up headlines are produced.
 """
 import asyncio
 import email.utils
@@ -92,19 +93,18 @@ async def _from_cryptopanic(client: httpx.AsyncClient) -> list[dict]:
     return items
 
 
-def _demo() -> list[dict]:
-    now = datetime.now(timezone.utc)
-    samples = [
-        ("Spot Bitcoin funds record a third straight week of inflows", "Funds holding Bitcoin directly took in fresh money again."),
-        ("Major exchange pauses withdrawals for emergency maintenance", "Withdrawals are paused while a wallet issue is fixed."),
-        ("Regulators publish draft rules for crypto trading platforms", "The draft sets licensing and reporting requirements."),
-        ("Ethereum upgrade date confirmed, aiming to lower fees", "Developers agreed on a target date for the next upgrade."),
-        ("Solana network slows during a traffic spike", "Transactions slowed for about forty minutes before recovering."),
-    ]
-    return [_raw(t, d, "Demo feed", "", now - timedelta(hours=i * 2 + 1)) for i, (t, d) in enumerate(samples)]
+class NewsUnavailable(Exception):
+    pass
 
 
 async def latest_news(limit: int = 40) -> dict:
+    try:
+        return await _latest_news(limit)
+    except NewsUnavailable as exc:
+        return {"source": "unavailable", "items": [], "note": str(exc)}
+
+
+async def _latest_news(limit: int) -> dict:
     async def build():
         async with httpx.AsyncClient(timeout=12, follow_redirects=True) as client:
             items, source = [], "rss"
@@ -116,7 +116,8 @@ async def latest_news(limit: int = 40) -> dict:
             if not items:
                 items, source = await _from_rss(client), "rss"
         if not items:
-            items, source = _demo(), "demo"
+            # No feed reachable: report it instead of showing made-up headlines (not cached long).
+            raise NewsUnavailable("No news feed could be reached.")
         items.sort(key=lambda i: i["published_at"], reverse=True)
         items = items[:limit]
 

@@ -1,0 +1,521 @@
+\subsubsection*{backend/app/config.py}
+\textit{All settings, read from environment variables or the .env file.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Settings} --- Line 10.
+\item \hspace*{1em}\texttt{symbol\_\allowbreak{}list(\allowbreak{}self)} --- Line 76.
+\item \hspace*{1em}\texttt{quiver\_\allowbreak{}ticker\_\allowbreak{}list(\allowbreak{}self)} --- Line 80.
+\item \hspace*{1em}\texttt{cors\_\allowbreak{}list(\allowbreak{}self)} --- Line 84.
+\end{itemize}
+\subsubsection*{backend/app/database.py}
+\textit{Database connection.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{sqlalchemy\_\allowbreak{}url(\allowbreak{}url)} --- Line 8.
+\item \textbf{Class} \texttt{Base} --- Line 25.
+\item \texttt{get\_\allowbreak{}db(\allowbreak{})} --- Line 29. FastAPI dependency: one database session per request.
+\end{itemize}
+\subsubsection*{backend/app/main.py}
+\textit{CryptoSense AI backend.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async lifespan(\allowbreak{}app)} --- Line 27.
+\item \texttt{async signal\_\allowbreak{}unavailable(\allowbreak{}\_\allowbreak{},\allowbreak{} exc)} --- Line 64. Signals/risk can't be computed from real data right now: say so instead of guessing.
+\item \texttt{root(\allowbreak{})} --- Line 77.
+\end{itemize}
+\subsubsection*{backend/app/models.py}
+\textit{Database tables.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{now(\allowbreak{})} --- Line 10.
+\item \textbf{Class} \texttt{User} --- Line 14.
+\item \textbf{Class} \texttt{Holding} --- Line 27. A coin the user owns, with optional stop-loss / take-profit (in \%).
+\item \textbf{Class} \texttt{Alert} --- Line 43. User alert.
+\item \textbf{Class} \texttt{Notification} --- Line 65. Message created when an alert or a P\&L limit fires.
+\item \textbf{Class} \texttt{Listing} --- Line 77. Cache of Binance USDT pairs and the date each one was first listed.
+\item \textbf{Class} \texttt{RiskPrediction} --- Line 92. History of the AI risk score (one row per coin every \textasciitilde{}30 minutes).
+\item \textbf{Class} \texttt{LiquidationEvent} --- Line 103. One observed Binance futures liquidation (forceOrder stream snapshot).
+\end{itemize}
+\subsubsection*{backend/app/paper\_models.py}
+\textit{Paper-trading tables: a practice account, its open positions and its trade history.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}now(\allowbreak{})} --- Line 10.
+\item \textbf{Class} \texttt{PaperAccount} --- Line 14. One practice account per user, started with pretend cash.
+\item \textbf{Class} \texttt{PaperPosition} --- Line 25. Coins currently held in the practice account (average cost includes fees).
+\item \textbf{Class} \texttt{PaperTrade} --- Line 37. Every practice buy and sell, with the AI risk score at that moment.
+\end{itemize}
+\subsubsection*{backend/app/routers/alerts.py}
+\textit{Price alerts and the notifications they create.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}own(\allowbreak{}db,\allowbreak{} user,\allowbreak{} alert\_\allowbreak{}id)} --- Line 14.
+\item \texttt{list\_\allowbreak{}alerts(\allowbreak{}user,\allowbreak{} db)} --- Line 22.
+\item \texttt{create\_\allowbreak{}alert(\allowbreak{}body,\allowbreak{} user,\allowbreak{} db)} --- Line 27.
+\item \texttt{toggle\_\allowbreak{}alert(\allowbreak{}alert\_\allowbreak{}id,\allowbreak{} user,\allowbreak{} db)} --- Line 36.
+\item \texttt{delete\_\allowbreak{}alert(\allowbreak{}alert\_\allowbreak{}id,\allowbreak{} user,\allowbreak{} db)} --- Line 47.
+\item \texttt{notifications(\allowbreak{}unseen\_\allowbreak{}only,\allowbreak{} user,\allowbreak{} db)} --- Line 53.
+\item \texttt{mark\_\allowbreak{}seen(\allowbreak{}user,\allowbreak{} db)} --- Line 61.
+\end{itemize}
+\subsubsection*{backend/app/routers/auth.py}
+\textit{Register, log in, and "who am I".}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}out(\allowbreak{}u)} --- Line 14.
+\item \texttt{register(\allowbreak{}body,\allowbreak{} db)} --- Line 19.
+\item \texttt{login(\allowbreak{}body,\allowbreak{} db)} --- Line 31.
+\item \texttt{me(\allowbreak{}user)} --- Line 39.
+\end{itemize}
+\subsubsection*{backend/app/routers/chat.py}
+\textit{CryptoSentinel Risk Copilot chat and its six specialist analysts.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async chat(\allowbreak{}body,\allowbreak{} user,\allowbreak{} db)} --- Line 25.
+\item \texttt{async specialist\_\allowbreak{}agents(\allowbreak{})} --- Line 49. Names and responsibilities of the six specialists coordinated by the copilot.
+\item \texttt{async knowledge\_\allowbreak{}status(\allowbreak{})} --- Line 55. Which search engine the RAG uses and how many documents it holds.
+\item \texttt{async rebuild\_\allowbreak{}knowledge(\allowbreak{})} --- Line 61. Re-load lessons, latest news and signals into the knowledge base.
+\end{itemize}
+\subsubsection*{backend/app/routers/discover.py}
+\textit{News, whale transfers, liquidations, crypto-linked stock flows and new listings.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async news(\allowbreak{}sentiment,\allowbreak{} limit)} --- Line 14.
+\item \texttt{async news\_\allowbreak{}compare(\allowbreak{})} --- Line 22. Jev vs the baseline model (FinBERT or VADER) on the current headlines.
+\item \texttt{async whales(\allowbreak{})} --- Line 47.
+\item \texttt{liquidations(\allowbreak{}limit,\allowbreak{} symbol)} --- Line 52.
+\item \texttt{async quiver\_\allowbreak{}smart\_\allowbreak{}money(\allowbreak{})} --- Line 58. Congress + insider trades in crypto-linked US stocks (Quiver Quantitative).
+\item \texttt{listings(\allowbreak{})} --- Line 64.
+\end{itemize}
+\subsubsection*{backend/app/routers/liquidations.py}
+\textit{Liquidation intelligence: statistics, timeline, anomalies, market context and explanations.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{stream\_\allowbreak{}status(\allowbreak{})} --- Line 23. Connection health, counters, reconnects and the Binance data limitation.
+\item \texttt{async stats(\allowbreak{}window,\allowbreak{} symbol,\allowbreak{} group,\allowbreak{} db)} --- Line 29. Totals, long/short split and ratio, largest events, most affected coin, by-coin table, recent events, timeline and how much of the window was actually observed.
+\item \texttt{async timeline(\allowbreak{}window,\allowbreak{} symbol,\allowbreak{} group,\allowbreak{} db)} --- Line 37.
+\item \texttt{async history(\allowbreak{}symbol,\allowbreak{} before\_\allowbreak{}ms,\allowbreak{} limit,\allowbreak{} min\_\allowbreak{}usd,\allowbreak{} db)} --- Line 45.
+\item \texttt{async anomalies(\allowbreak{}symbol,\allowbreak{} db)} --- Line 54.
+\item \texttt{async \_\allowbreak{}context(\allowbreak{}symbol,\allowbreak{} window,\allowbreak{} db)} --- Line 58.
+\item \texttt{async context(\allowbreak{}symbol,\allowbreak{} window,\allowbreak{} db)} --- Line 66. Liquidations next to price, volume, open interest, funding and ATR, with possible scenarios.
+\item \texttt{async explain(\allowbreak{}window,\allowbreak{} symbol,\allowbreak{} db)} --- Line 74. Answers the six panel questions from verified data.
+\end{itemize}
+\subsubsection*{backend/app/routers/market.py}
+\textit{Market data: prices, candles, and market sentiment (Fear \& Greed, funding, open interest).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async tickers(\allowbreak{})} --- Line 17.
+\item \texttt{async klines(\allowbreak{}symbol,\allowbreak{} interval,\allowbreak{} limit)} --- Line 23.
+\item \texttt{async market\_\allowbreak{}sentiment(\allowbreak{})} --- Line 35. Feeds the 'Market mood' gauge: Fear \& Greed (7 days) + futures funding and open interest per coin.
+\end{itemize}
+\subsubsection*{backend/app/routers/paper.py}
+\textit{Paper wallet: practice trading with 10,000 pretend dollars at real live prices.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{TradeIn} --- Line 24.
+\item \texttt{\_\allowbreak{}aware(\allowbreak{}dt)} --- Line 31.
+\item \texttt{\_\allowbreak{}trade\_\allowbreak{}json(\allowbreak{}t)} --- Line 35.
+\item \texttt{async \_\allowbreak{}risk\_\allowbreak{}of(\allowbreak{}symbol)} --- Line 41. AI risk of a coin right now.
+\item \texttt{async \_\allowbreak{}summary(\allowbreak{}db,\allowbreak{} user)} --- Line 52.
+\item \texttt{async my\_\allowbreak{}account(\allowbreak{}user,\allowbreak{} db)} --- Line 71. Cash, open positions with live profit/loss, and simple statistics.
+\item \texttt{async place\_\allowbreak{}trade(\allowbreak{}body,\allowbreak{} user,\allowbreak{} db)} --- Line 77.
+\item \texttt{trade\_\allowbreak{}history(\allowbreak{}limit,\allowbreak{} user,\allowbreak{} db)} --- Line 115.
+\item \texttt{async reset\_\allowbreak{}account(\allowbreak{}user,\allowbreak{} db)} --- Line 123. Delete all practice trades and start again with the starting cash.
+\end{itemize}
+\subsubsection*{backend/app/routers/portfolio.py}
+\textit{Portfolio with live profit \& loss, and per-coin P\&L limits.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async build\_\allowbreak{}portfolio(\allowbreak{}user,\allowbreak{} db)} --- Line 15.
+\item \texttt{\_\allowbreak{}find(\allowbreak{}db,\allowbreak{} user,\allowbreak{} symbol)} --- Line 38.
+\item \texttt{async get\_\allowbreak{}portfolio(\allowbreak{}user,\allowbreak{} db)} --- Line 43.
+\item \texttt{async add\_\allowbreak{}holding(\allowbreak{}body,\allowbreak{} user,\allowbreak{} db)} --- Line 48.
+\item \texttt{async remove\_\allowbreak{}holding(\allowbreak{}symbol,\allowbreak{} user,\allowbreak{} db)} --- Line 63.
+\item \texttt{async set\_\allowbreak{}limits(\allowbreak{}symbol,\allowbreak{} body,\allowbreak{} user,\allowbreak{} db)} --- Line 73.
+\end{itemize}
+\subsubsection*{backend/app/routers/risk.py}
+\textit{AI risk score for each coin, risk history, and the risk of the user's portfolio.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}aware(\allowbreak{}dt)} --- Line 23.
+\item \texttt{async \_\allowbreak{}all\_\allowbreak{}risks(\allowbreak{}db)} --- Line 27.
+\item \texttt{async all\_\allowbreak{}risks(\allowbreak{}db)} --- Line 41. Risk score, level and the reasons behind it, for every tracked coin.
+\item \texttt{async portfolio\_\allowbreak{}risk(\allowbreak{}user,\allowbreak{} db)} --- Line 47. Value-weighted risk of the logged-in user's portfolio.
+\item \texttt{async one\_\allowbreak{}risk(\allowbreak{}symbol,\allowbreak{} db)} --- Line 55.
+\item \texttt{async risk\_\allowbreak{}copilot(\allowbreak{}symbol)} --- Line 66. Model consensus and real, completed historical analogs for a tracked coin.
+\item \texttt{async simulate\_\allowbreak{}risk(\allowbreak{}symbol,\allowbreak{} body)} --- Line 98. Recalculate the transparent risk score after changing volatility only.
+\item \texttt{risk\_\allowbreak{}history(\allowbreak{}symbol,\allowbreak{} limit,\allowbreak{} db)} --- Line 118.
+\end{itemize}
+\subsubsection*{backend/app/routers/signals.py}
+\textit{AI market-state signals (bullish / bearish / neutral + confidence + reasons).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async signals(\allowbreak{})} --- Line 12.
+\item \texttt{model\_\allowbreak{}info(\allowbreak{})} --- Line 17. Accuracy, F1 and settings of the trained models (for the report / viva).
+\item \texttt{reload\_\allowbreak{}models(\allowbreak{})} --- Line 23. Reload models from ml/models after retraining, without restarting the server.
+\item \texttt{async one\_\allowbreak{}signal(\allowbreak{}symbol)} --- Line 30.
+\end{itemize}
+\subsubsection*{backend/app/schemas.py}
+\textit{Request and response shapes (validated by Pydantic).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{RegisterIn} --- Line 8.
+\item \textbf{Class} \texttt{LoginIn} --- Line 14.
+\item \textbf{Class} \texttt{UserOut} --- Line 19.
+\item \textbf{Class} \texttt{TokenOut} --- Line 25.
+\item \textbf{Class} \texttt{HoldingIn} --- Line 31.
+\item \textbf{Class} \texttt{LimitsIn} --- Line 37.
+\item \textbf{Class} \texttt{HoldingOut} --- Line 42.
+\item \textbf{Class} \texttt{PortfolioOut} --- Line 54.
+\item \textbf{Class} \texttt{AlertIn} --- Line 63.
+\item \hspace*{1em}\texttt{validate\_\allowbreak{}risk\_\allowbreak{}threshold(\allowbreak{}self)} --- Line 70.
+\item \textbf{Class} \texttt{RiskSimulationIn} --- Line 82.
+\item \textbf{Class} \texttt{AlertOut} --- Line 86.
+\item \textbf{Class} \texttt{NotificationOut} --- Line 96.
+\item \textbf{Class} \texttt{ChatIn} --- Line 104.
+\item \textbf{Class} \texttt{SourceOut} --- Line 108.
+\item \textbf{Class} \texttt{AgentReportOut} --- Line 116.
+\item \textbf{Class} \texttt{ChatOut} --- Line 123.
+\end{itemize}
+\subsubsection*{backend/app/security.py}
+\textit{Password hashing (bcrypt) and login tokens (JWT).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{hash\_\allowbreak{}password(\allowbreak{}password)} --- Line 17.
+\item \texttt{verify\_\allowbreak{}password(\allowbreak{}password,\allowbreak{} hashed)} --- Line 21.
+\item \texttt{create\_\allowbreak{}token(\allowbreak{}user\_\allowbreak{}id)} --- Line 28.
+\item \texttt{\_\allowbreak{}user\_\allowbreak{}from(\allowbreak{}creds,\allowbreak{} db)} --- Line 36.
+\item \texttt{current\_\allowbreak{}user(\allowbreak{}creds,\allowbreak{} db)} --- Line 46. Dependency for routes that need a logged-in user.
+\item \texttt{optional\_\allowbreak{}user(\allowbreak{}creds,\allowbreak{} db)} --- Line 56. Dependency for routes that work with or without login (e.g.
+\end{itemize}
+\subsubsection*{backend/app/services/agents.py}
+\textit{Specialist analysts orchestrated by CryptoSentinel Risk Copilot.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}focus\_\allowbreak{}symbols(\allowbreak{}question,\allowbreak{} context)} --- Line 31.
+\item \texttt{\_\allowbreak{}report(\allowbreak{}name,\allowbreak{} status,\allowbreak{} summary,\allowbreak{} data)} --- Line 46.
+\item \textbf{Class} \texttt{MarketIntelligenceAgent} --- Line 50.
+\item \hspace*{1em}\texttt{analyze(\allowbreak{}cls,\allowbreak{} question,\allowbreak{} context)} --- Line 54.
+\item \textbf{Class} \texttt{DerivativesAgent} --- Line 98.
+\item \hspace*{1em}\texttt{async \_\allowbreak{}one(\allowbreak{}symbol)} --- Line 102.
+\item \hspace*{1em}\texttt{async analyze(\allowbreak{}cls,\allowbreak{} question,\allowbreak{} context)} --- Line 134.
+\item \textbf{Class} \texttt{OnChainAgent} --- Line 167.
+\item \hspace*{1em}\texttt{async analyze(\allowbreak{}\_\allowbreak{}question,\allowbreak{} \_\allowbreak{}context)} --- Line 171.
+\item \textbf{Class} \texttt{SentimentNewsAgent} --- Line 196.
+\item \hspace*{1em}\texttt{async analyze(\allowbreak{}\_\allowbreak{}question,\allowbreak{} context)} --- Line 200.
+\item \texttt{async \_\allowbreak{}fear\_\allowbreak{}greed(\allowbreak{}context)} --- Line 249.
+\item \textbf{Class} \texttt{RiskAssessmentAgent} --- Line 256.
+\item \hspace*{1em}\texttt{analyze(\allowbreak{}cls,\allowbreak{} question,\allowbreak{} context)} --- Line 260.
+\item \textbf{Class} \texttt{ExplanationAgent} --- Line 306.
+\item \hspace*{1em}\texttt{analyze(\allowbreak{}cls,\allowbreak{} reports)} --- Line 310.
+\item \texttt{async run\_\allowbreak{}specialists(\allowbreak{}question,\allowbreak{} context)} --- Line 335. Run all six specialists and return their structured reports in stable order.
+\end{itemize}
+\subsubsection*{backend/app/services/binance.py}
+\textit{Binance public REST APIs (no key needed): spot prices/candles + futures funding rates.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{client(\allowbreak{})} --- Line 18.
+\item \texttt{futures\_\allowbreak{}client(\allowbreak{})} --- Line 25.
+\item \texttt{async close(\allowbreak{})} --- Line 32.
+\item \texttt{to\_\allowbreak{}frame(\allowbreak{}rows)} --- Line 40. Binance kline rows $\rightarrow$ DataFrame.
+\item \texttt{funding\_\allowbreak{}frame(\allowbreak{}rows)} --- Line 49. Futures funding-rate rows $\rightarrow$ DataFrame(time, funding\_rate in \%).
+\item \texttt{async klines(\allowbreak{}symbol,\allowbreak{} interval,\allowbreak{} limit,\allowbreak{} start\_\allowbreak{}time)} --- Line 59.
+\item \texttt{async funding\_\allowbreak{}rates(\allowbreak{}symbol,\allowbreak{} limit)} --- Line 68. Funding rate history (every 8h).
+\item \texttt{async futures\_\allowbreak{}klines(\allowbreak{}symbol,\allowbreak{} interval,\allowbreak{} limit)} --- Line 75. USD-M futures candles (same column layout as spot klines).
+\item \texttt{async open\_\allowbreak{}interest\_\allowbreak{}hist(\allowbreak{}symbol,\allowbreak{} period,\allowbreak{} limit)} --- Line 82. Open-interest history (public; Binance keeps about 30 days).
+\item \texttt{async open\_\allowbreak{}interest(\allowbreak{}symbol)} --- Line 90. Current open interest (number of open futures contracts).
+\item \texttt{async long\_\allowbreak{}short\_\allowbreak{}ratio(\allowbreak{}symbol,\allowbreak{} period,\allowbreak{} limit)} --- Line 97. Public futures account-position ratio: no API key required.
+\item \texttt{async tickers(\allowbreak{}symbols)} --- Line 108.
+\item \texttt{async all\_\allowbreak{}tickers(\allowbreak{})} --- Line 116.
+\item \texttt{async exchange\_\allowbreak{}info(\allowbreak{})} --- Line 122.
+\item \texttt{simple\_\allowbreak{}ticker(\allowbreak{}t)} --- Line 128. Binance 24hr ticker $\rightarrow$ the fields the frontend uses.
+\end{itemize}
+\subsubsection*{backend/app/services/cache.py}
+\textit{Tiny in-memory cache so we don't hit outside APIs on every request.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async cached(\allowbreak{}key,\allowbreak{} ttl,\allowbreak{} fn)} --- Line 10.
+\item \texttt{clear(\allowbreak{})} --- Line 24.
+\end{itemize}
+\subsubsection*{backend/app/services/copilot.py}
+\textit{Historical market analogs for the risk copilot.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{find\_\allowbreak{}historical\_\allowbreak{}twins(\allowbreak{}candles,\allowbreak{} limit)} --- Line 13. Find similar completed hourly states and report their following 24h returns.
+\item \texttt{async historical\_\allowbreak{}twins(\allowbreak{}symbol)} --- Line 47.
+\end{itemize}
+\subsubsection*{backend/app/services/explainer.py}
+\textit{Grounded AI explanations of already-computed analytics.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{extract\_\allowbreak{}numbers(\allowbreak{}text)} --- Line 32. (value, significant digits as written) for each number in the text.
+\item \texttt{\_\allowbreak{}numbers\_\allowbreak{}in(\allowbreak{}obj,\allowbreak{} acc)} --- Line 50.
+\item \texttt{\_\allowbreak{}round\_\allowbreak{}sig(\allowbreak{}x,\allowbreak{} digits)} --- Line 67.
+\item \texttt{ungrounded\_\allowbreak{}numbers(\allowbreak{}text,\allowbreak{} facts)} --- Line 73. Numbers in `text` that can't be traced to `facts` at the precision they were written.
+\item \texttt{async explain(\allowbreak{}facts,\allowbreak{} questions,\allowbreak{} rules\_\allowbreak{}text)} --- Line 91. Returns \{"text", "source", "validated", "rejected\_numbers"\}; the text is grounded in facts.
+\end{itemize}
+\subsubsection*{backend/app/services/features.py}
+\textit{Features for the ML/DL models (same code for training and live prediction).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{merge\_\allowbreak{}context(\allowbreak{}df,\allowbreak{} funding,\allowbreak{} fng,\allowbreak{} btc)} --- Line 26. Attach funding rate, Fear \& Greed and BTC candles to a coin's hourly candles.
+\item \texttt{add\_\allowbreak{}features(\allowbreak{}df)} --- Line 56.
+\item \texttt{add\_\allowbreak{}labels(\allowbreak{}df,\allowbreak{} horizon,\allowbreak{} threshold)} --- Line 109. Target: price change `horizon` hours later.
+\item \texttt{explain(\allowbreak{}row,\allowbreak{} trend)} --- Line 120. Plain-language reasons behind a signal.
+\end{itemize}
+\subsubsection*{backend/app/services/jev.py}
+\textit{Jev by TypeSafe AI: a "System One" decision model.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{available(\allowbreak{})} --- Line 48.
+\item \texttt{async decide(\allowbreak{}client,\allowbreak{} state,\allowbreak{} questions)} --- Line 52. One Jev request.
+\item \texttt{\_\allowbreak{}news\_\allowbreak{}result(\allowbreak{}answers)} --- Line 63.
+\item \texttt{async judge\_\allowbreak{}news(\allowbreak{}texts)} --- Line 83. Jev verdict for each headline (None where the call failed).
+\item \texttt{status(\allowbreak{})} --- Line 126. For /api/news/compare and debugging.
+\end{itemize}
+\subsubsection*{backend/app/services/levels.py}
+\textit{UTC market levels calculated from observed Binance candles.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{key\_\allowbreak{}levels(\allowbreak{}candles,\allowbreak{} price,\allowbreak{} atr\_\allowbreak{}pct)} --- Line 6. Return previous-day, Asia, London, and prior-week highs/lows with ATR distances.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_alerts.py}
+\textit{User liquidation alerts (kinds liq\_large, liq\_spike, liq\_long, liq\_short, liq\_imbal).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}aware(\allowbreak{}dt)} --- Line 19.
+\item \texttt{cooling\_\allowbreak{}down(\allowbreak{}alert,\allowbreak{} now)} --- Line 25.
+\item \texttt{\_\allowbreak{}usd(\allowbreak{}v)} --- Line 30.
+\item \texttt{message\_\allowbreak{}for(\allowbreak{}alert,\allowbreak{} metrics)} --- Line 34. Pure check: the notification text if `alert` should fire for `metrics`, else None.
+\item \texttt{metrics\_\allowbreak{}for(\allowbreak{}db,\allowbreak{} symbol,\allowbreak{} since\_\allowbreak{}ms,\allowbreak{} now\_\allowbreak{}ms)} --- Line 65.
+\item \texttt{evaluate(\allowbreak{}db,\allowbreak{} alerts,\allowbreak{} now)} --- Line 78. Returns (alert, message) pairs that fire now, marking triggered\_at for the cooldown.
+\item \texttt{now\_\allowbreak{}ms(\allowbreak{})} --- Line 100.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_anomaly.py}
+\textit{Liquidation spike detection against a rolling statistical baseline.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Params} --- Line 35.
+\item \hspace*{1em}\texttt{from\_\allowbreak{}settings(\allowbreak{}cls)} --- Line 42.
+\item \texttt{robust\_\allowbreak{}z(\allowbreak{}current,\allowbreak{} history,\allowbreak{} min\_\allowbreak{}usd)} --- Line 47. Returns (z, median, scale).
+\item \texttt{\_\allowbreak{}usd(\allowbreak{}v)} --- Line 55.
+\item \texttt{\_\allowbreak{}severity(\allowbreak{}z,\allowbreak{} threshold)} --- Line 65.
+\item \texttt{spike(\allowbreak{}kind,\allowbreak{} label,\allowbreak{} current,\allowbreak{} history,\allowbreak{} p,\allowbreak{} symbol)} --- Line 69.
+\item \texttt{find\_\allowbreak{}anomalies(\allowbreak{}current,\allowbreak{} baseline,\allowbreak{} bursts,\allowbreak{} recent\_\allowbreak{}15m,\allowbreak{} p)} --- Line 84. Pure detection step.
+\item \texttt{\_\allowbreak{}sum\_\allowbreak{}by(\allowbreak{}db,\allowbreak{} start\_\allowbreak{}ms,\allowbreak{} end\_\allowbreak{}ms,\allowbreak{} symbol)} --- Line 140.
+\item \texttt{load\_\allowbreak{}inputs(\allowbreak{}db,\allowbreak{} symbol,\allowbreak{} now\_\allowbreak{}ms)} --- Line 152. Current 5m / last 15m sums, the zero-filled 5m baseline series and 60s burst counts.
+\item \texttt{scores(\allowbreak{}inputs,\allowbreak{} min\_\allowbreak{}usd)} --- Line 184. Raw robust z-scores and the imbalance shift for one symbol (used by user alerts).
+\item \texttt{detect(\allowbreak{}db,\allowbreak{} symbol,\allowbreak{} now\_\allowbreak{}ms,\allowbreak{} params)} --- Line 202. Load the inputs from the database and run find\_anomalies().
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_context.py}
+\textit{Puts observed liquidations next to price, volume, open interest, funding and volatility.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{dominance(\allowbreak{}long\_\allowbreak{}usd,\allowbreak{} short\_\allowbreak{}usd)} --- Line 26.
+\item \texttt{market\_\allowbreak{}numbers(\allowbreak{}candles,\allowbreak{} per\_\allowbreak{}window)} --- Line 37. Price change, range, volume vs the previous window and ATR\% from futures candles.
+\item \texttt{oi\_\allowbreak{}numbers(\allowbreak{}rows,\allowbreak{} points)} --- Line 65.
+\item \texttt{direction(\allowbreak{}change\_\allowbreak{}pct,\allowbreak{} flat\_\allowbreak{}below)} --- Line 75.
+\item \texttt{scenarios(\allowbreak{}dom,\allowbreak{} price\_\allowbreak{}dir,\allowbreak{} oi\_\allowbreak{}dir,\allowbreak{} funding,\allowbreak{} total\_\allowbreak{}usd,\allowbreak{} min\_\allowbreak{}usd)} --- Line 83. Rule table: which explanations fit the observed combination.
+\item \texttt{async \_\allowbreak{}safe(\allowbreak{}coro,\allowbreak{} label,\allowbreak{} missing)} --- Line 138.
+\item \texttt{async build(\allowbreak{}symbol,\allowbreak{} window,\allowbreak{} long\_\allowbreak{}usd,\allowbreak{} short\_\allowbreak{}usd)} --- Line 147.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_explain.py}
+\textit{Builds the facts and the deterministic answers for the liquidation explanation panel.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}usd(\allowbreak{}v)} --- Line 16.
+\item \texttt{build\_\allowbreak{}facts(\allowbreak{}stats,\allowbreak{} anomalies,\allowbreak{} context)} --- Line 28.
+\item \texttt{rules\_\allowbreak{}answers(\allowbreak{}facts)} --- Line 59.
+\item \texttt{rules\_\allowbreak{}text(\allowbreak{}answers)} --- Line 122.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_stats.py}
+\textit{Time-window statistics over stored, observed Binance liquidation events.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}filters(\allowbreak{}start\_\allowbreak{}ms,\allowbreak{} end\_\allowbreak{}ms,\allowbreak{} symbol,\allowbreak{} group)} --- Line 22.
+\item \texttt{\_\allowbreak{}usd(\allowbreak{}position)} --- Line 31.
+\item \texttt{\_\allowbreak{}count(\allowbreak{}position)} --- Line 35.
+\item \texttt{\_\allowbreak{}event(\allowbreak{}row)} --- Line 39.
+\item \texttt{totals(\allowbreak{}long\_\allowbreak{}usd,\allowbreak{} short\_\allowbreak{}usd,\allowbreak{} long\_\allowbreak{}n,\allowbreak{} short\_\allowbreak{}n,\allowbreak{} invalid\_\allowbreak{}n)} --- Line 49.
+\item \texttt{coverage(\allowbreak{}db,\allowbreak{} start\_\allowbreak{}ms,\allowbreak{} end\_\allowbreak{}ms)} --- Line 64. How much of the window was actually observed.
+\item \texttt{window\_\allowbreak{}stats(\allowbreak{}db,\allowbreak{} window,\allowbreak{} symbol,\allowbreak{} group,\allowbreak{} now\_\allowbreak{}ms)} --- Line 91.
+\item \texttt{timeline(\allowbreak{}db,\allowbreak{} window,\allowbreak{} symbol,\allowbreak{} group,\allowbreak{} now\_\allowbreak{}ms)} --- Line 135. Zero-filled long/short USD per bucket, oldest first, aligned to UTC bucket boundaries.
+\item \texttt{history(\allowbreak{}db,\allowbreak{} symbol,\allowbreak{} before\_\allowbreak{}ms,\allowbreak{} limit,\allowbreak{} min\_\allowbreak{}usd)} --- Line 159. Stored events, newest first, for paging back through history.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidation\_store.py}
+\textit{Persists observed liquidation events so 4h/24h statistics and baselines survive restarts.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{to\_\allowbreak{}row(\allowbreak{}event)} --- Line 27.
+\item \texttt{store\_\allowbreak{}events(\allowbreak{}db,\allowbreak{} events)} --- Line 47. Insert events not already stored.
+\item \texttt{prune(\allowbreak{}db,\allowbreak{} now\_\allowbreak{}ms)} --- Line 61.
+\item \texttt{earliest\_\allowbreak{}event\_\allowbreak{}ms(\allowbreak{}db)} --- Line 69.
+\item \texttt{last\_\allowbreak{}flush\_\allowbreak{}at(\allowbreak{})} --- Line 73.
+\item \texttt{\_\allowbreak{}flush(\allowbreak{}factory,\allowbreak{} batch)} --- Line 77.
+\item \texttt{async store\_\allowbreak{}loop(\allowbreak{}factory)} --- Line 82.
+\end{itemize}
+\subsubsection*{backend/app/services/liquidations.py}
+\textit{Binance USD-M futures liquidation stream (all-market forceOrder).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}num(\allowbreak{}value)} --- Line 46.
+\item \texttt{parse\_\allowbreak{}message(\allowbreak{}message)} --- Line 53. Validate and normalise one stream message into zero or more liquidation events.
+\item \texttt{\_\allowbreak{}is\_\allowbreak{}duplicate(\allowbreak{}key)} --- Line 109.
+\item \texttt{ingest(\allowbreak{}raw)} --- Line 119. Process one raw websocket payload.
+\item \texttt{\_\allowbreak{}cleanup(\allowbreak{})} --- Line 148.
+\item \texttt{\_\allowbreak{}mark\_\allowbreak{}disconnected(\allowbreak{}error)} --- Line 154.
+\item \texttt{\_\allowbreak{}mark\_\allowbreak{}connected(\allowbreak{})} --- Line 162.
+\item \texttt{async liquidation\_\allowbreak{}loop(\allowbreak{})} --- Line 171. Keep the websocket open; reconnect on errors or when no message arrives for LIQUIDATION\_SILENCE\_SECONDS (a connection that is open but silent is treated as broken).
+\item \texttt{take\_\allowbreak{}pending(\allowbreak{})} --- Line 197. Hand the not-yet-stored events to the store (and clear the buffer).
+\item \texttt{gaps\_\allowbreak{}between(\allowbreak{}start,\allowbreak{} end)} --- Line 204. Seconds the stream was disconnected inside [start, end].
+\item \texttt{stream\_\allowbreak{}status(\allowbreak{})} --- Line 214.
+\item \texttt{\_\allowbreak{}totals(\allowbreak{}events)} --- Line 236.
+\item \texttt{describe\_\allowbreak{}balance(\allowbreak{}long\_\allowbreak{}usd,\allowbreak{} short\_\allowbreak{}usd,\allowbreak{} window)} --- Line 247. Neutral description of which side is being liquidated.
+\item \texttt{snapshot(\allowbreak{}limit,\allowbreak{} symbol)} --- Line 261. Recent events (newest first) plus totals over the full rolling 1h window.
+\end{itemize}
+\subsubsection*{backend/app/services/listings.py}
+\textit{New coin listings on Binance, found for free: 1.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{risk\_\allowbreak{}level(\allowbreak{}volatility,\allowbreak{} volume)} --- Line 23.
+\item \texttt{note\_\allowbreak{}for(\allowbreak{}risk,\allowbreak{} change)} --- Line 31.
+\item \texttt{async refresh(\allowbreak{})} --- Line 40. Update the listings table.
+\item \texttt{async \_\allowbreak{}update\_\allowbreak{}recent(\allowbreak{})} --- Line 80.
+\item \texttt{\_\allowbreak{}aware(\allowbreak{}dt)} --- Line 111.
+\item \texttt{recent\_\allowbreak{}listings(\allowbreak{})} --- Line 115.
+\end{itemize}
+\subsubsection*{backend/app/services/market.py}
+\textit{Live prices for the tracked coins (cached a few seconds).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async prices(\allowbreak{})} --- Line 17. \{symbol: ticker\} for every tracked coin.
+\item \texttt{async price\_\allowbreak{}of(\allowbreak{}symbol)} --- Line 29.
+\end{itemize}
+\subsubsection*{backend/app/services/news.py}
+\textit{Crypto news with sentiment (FinBERT, or VADER as fallback).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{coins\_\allowbreak{}in(\allowbreak{}text)} --- Line 35.
+\item \texttt{sage\_\allowbreak{}take(\allowbreak{}label,\allowbreak{} coins)} --- Line 41.
+\item \texttt{\_\allowbreak{}strip\_\allowbreak{}html(\allowbreak{}s)} --- Line 53.
+\item \texttt{\_\allowbreak{}raw(\allowbreak{}title,\allowbreak{} summary,\allowbreak{} source,\allowbreak{} url,\allowbreak{} published)} --- Line 57.
+\item \texttt{async \_\allowbreak{}from\_\allowbreak{}rss(\allowbreak{}client)} --- Line 62.
+\item \texttt{async \_\allowbreak{}from\_\allowbreak{}cryptopanic(\allowbreak{}client)} --- Line 83.
+\item \textbf{Class} \texttt{NewsUnavailable} --- Line 96.
+\item \texttt{async latest\_\allowbreak{}news(\allowbreak{}limit)} --- Line 100.
+\item \texttt{async \_\allowbreak{}latest\_\allowbreak{}news(\allowbreak{}limit)} --- Line 107.
+\end{itemize}
+\subsubsection*{backend/app/services/paper.py}
+\textit{Paper-trading rules.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{TradeError} --- Line 17. A rule was broken (not enough cash, nothing to sell, ...).
+\item \texttt{account\_\allowbreak{}for(\allowbreak{}db,\allowbreak{} user\_\allowbreak{}id)} --- Line 21.
+\item \texttt{positions\_\allowbreak{}of(\allowbreak{}db,\allowbreak{} acct)} --- Line 31.
+\item \texttt{\_\allowbreak{}position(\allowbreak{}db,\allowbreak{} acct,\allowbreak{} symbol)} --- Line 36.
+\item \texttt{buy(\allowbreak{}db,\allowbreak{} acct,\allowbreak{} symbol,\allowbreak{} usd,\allowbreak{} price,\allowbreak{} risk)} --- Line 41.
+\item \texttt{sell(\allowbreak{}db,\allowbreak{} acct,\allowbreak{} symbol,\allowbreak{} percent,\allowbreak{} price,\allowbreak{} risk)} --- Line 67.
+\item \texttt{reset(\allowbreak{}db,\allowbreak{} acct)} --- Line 91.
+\item \texttt{stats(\allowbreak{}db,\allowbreak{} acct)} --- Line 98.
+\end{itemize}
+\subsubsection*{backend/app/services/predictor.py}
+\textit{Loads the trained models and combines them into one signal.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Predictor} --- Line 20.
+\item \hspace*{1em}\texttt{\_\allowbreak{}\_\allowbreak{}init\_\allowbreak{}\_\allowbreak{}(\allowbreak{}self,\allowbreak{} model\_\allowbreak{}dir)} --- Line 21.
+\item \hspace*{1em}\texttt{reload(\allowbreak{}self)} --- Line 28.
+\item \hspace*{1em}\texttt{models(\allowbreak{}self)} --- Line 39.
+\item \hspace*{1em}\texttt{ready(\allowbreak{}self)} --- Line 43.
+\item \hspace*{1em}\texttt{predict(\allowbreak{}self,\allowbreak{} feats)} --- Line 46. feats = feature rows in time order (the last row is 'now').
+\end{itemize}
+\subsubsection*{backend/app/services/quiver.py}
+\textit{Quiver Quantitative: "smart money" trades in crypto-linked US stocks.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}get\_\allowbreak{}headers(\allowbreak{})} --- Line 27.
+\item \texttt{\_\allowbreak{}parse\_\allowbreak{}date(\allowbreak{}value)} --- Line 31.
+\item \texttt{\_\allowbreak{}num(\allowbreak{}value)} --- Line 44.
+\item \texttt{\_\allowbreak{}status\_\allowbreak{}of(\allowbreak{}exc)} --- Line 51.
+\item \texttt{parse\_\allowbreak{}congress(\allowbreak{}rows,\allowbreak{} tickers,\allowbreak{} since)} --- Line 60.
+\item \texttt{parse\_\allowbreak{}insiders(\allowbreak{}rows,\allowbreak{} since)} --- Line 83.
+\item \texttt{summarize(\allowbreak{}congress,\allowbreak{} insiders,\allowbreak{} tickers)} --- Line 106.
+\item \texttt{async \_\allowbreak{}fetch(\allowbreak{}client,\allowbreak{} path,\allowbreak{} params)} --- Line 134.
+\item \texttt{async \_\allowbreak{}build(\allowbreak{})} --- Line 141.
+\item \texttt{async smart\_\allowbreak{}money(\allowbreak{})} --- Line 179.
+\end{itemize}
+\subsubsection*{backend/app/services/rag.py}
+\textit{RAG knowledge base for the Sage chatbot (Retrieval-Augmented Generation).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}id(\allowbreak{}text)} --- Line 23.
+\item \texttt{load\_\allowbreak{}markdown\_\allowbreak{}docs(\allowbreak{})} --- Line 27. Split every knowledge/*.md file into one document per '\#\# ' section.
+\item \textbf{Class} \texttt{\_\allowbreak{}Sparse} --- Line 41. TF-IDF keyword search, saved to a JSON file.
+\item \hspace*{1em}\texttt{\_\allowbreak{}\_\allowbreak{}init\_\allowbreak{}\_\allowbreak{}(\allowbreak{}self)} --- Line 45.
+\item \hspace*{1em}\texttt{\_\allowbreak{}refit(\allowbreak{}self)} --- Line 53.
+\item \hspace*{1em}\texttt{upsert(\allowbreak{}self,\allowbreak{} docs)} --- Line 62.
+\item \hspace*{1em}\texttt{search(\allowbreak{}self,\allowbreak{} query,\allowbreak{} k)} --- Line 69.
+\item \hspace*{1em}\texttt{count(\allowbreak{}self)} --- Line 79.
+\item \textbf{Class} \texttt{KnowledgeBase} --- Line 83.
+\item \hspace*{1em}\texttt{\_\allowbreak{}\_\allowbreak{}init\_\allowbreak{}\_\allowbreak{}(\allowbreak{}self)} --- Line 84.
+\item \hspace*{1em}\texttt{store(\allowbreak{}self)} --- Line 89.
+\item \hspace*{1em}\texttt{build\_\allowbreak{}static(\allowbreak{}self)} --- Line 96.
+\item \hspace*{1em}\texttt{upsert\_\allowbreak{}news(\allowbreak{}self,\allowbreak{} items)} --- Line 101.
+\item \hspace*{1em}\texttt{upsert\_\allowbreak{}signals(\allowbreak{}self,\allowbreak{} signals)} --- Line 111.
+\item \hspace*{1em}\texttt{search(\allowbreak{}self,\allowbreak{} query,\allowbreak{} k)} --- Line 122.
+\item \hspace*{1em}\texttt{status(\allowbreak{}self)} --- Line 125.
+\end{itemize}
+\subsubsection*{backend/app/services/risk.py}
+\textit{AI risk score: how risky does a coin look over the next 24 hours?}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}clamp01(\allowbreak{}x)} --- Line 15.
+\item \texttt{level\_\allowbreak{}of(\allowbreak{}pct)} --- Line 19.
+\item \texttt{\_\allowbreak{}bearish\_\allowbreak{}probability(\allowbreak{}signal)} --- Line 23. The ensemble's (uncalibrated) bearish-class probability.
+\item \texttt{score\_\allowbreak{}from(\allowbreak{}signal)} --- Line 29.
+\item \texttt{portfolio\_\allowbreak{}risk(\allowbreak{}holdings,\allowbreak{} risks)} --- Line 95. Value-weighted risk of a user's portfolio.
+\end{itemize}
+\subsubsection*{backend/app/services/sage.py}
+\textit{Sage, the chatbot, powered by RAG.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async answer(\allowbreak{}question,\allowbreak{} context)} --- Line 38. Returns (answer, "llm" | "rules", sources).
+\item \texttt{\_\allowbreak{}live\_\allowbreak{}summary(\allowbreak{}ctx)} --- Line 61.
+\item \texttt{\_\allowbreak{}specialist\_\allowbreak{}summary(\allowbreak{}ctx,\allowbreak{} name)} --- Line 90.
+\item \texttt{\_\allowbreak{}user\_\allowbreak{}prompt(\allowbreak{}question,\allowbreak{} context,\allowbreak{} hits)} --- Line 95.
+\item \texttt{\_\allowbreak{}claude\_\allowbreak{}api(\allowbreak{})} --- Line 101.
+\item \texttt{async \_\allowbreak{}claude\_\allowbreak{}text(\allowbreak{}system,\allowbreak{} user)} --- Line 108.
+\item \texttt{async \_\allowbreak{}claude(\allowbreak{}question,\allowbreak{} context,\allowbreak{} hits)} --- Line 127.
+\item \texttt{async complete(\allowbreak{}system,\allowbreak{} user)} --- Line 131. Generic text completion for other features: Claude first, then the OpenAI-compatible LLM (Groq, or xAI Grok via LLM\_BASE\_URL=https://api.x.ai/v1).
+\item \texttt{async \_\allowbreak{}llm(\allowbreak{}question,\allowbreak{} context,\allowbreak{} hits)} --- Line 148.
+\item \texttt{async \_\allowbreak{}openai\_\allowbreak{}text(\allowbreak{}system,\allowbreak{} user)} --- Line 152.
+\item \texttt{\_\allowbreak{}usd(\allowbreak{}v)} --- Line 174.
+\item \texttt{\_\allowbreak{}is\_\allowbreak{}urdu\_\allowbreak{}question(\allowbreak{}question)} --- Line 178.
+\item \texttt{\_\allowbreak{}rules\_\allowbreak{}urdu(\allowbreak{}question,\allowbreak{} ctx)} --- Line 187.
+\item \texttt{rules(\allowbreak{}question,\allowbreak{} ctx)} --- Line 271.
+\end{itemize}
+\subsubsection*{backend/app/services/sentiment.py}
+\textit{News sentiment: VADER + a crypto word list (headline polarity, -1..1).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}label(\allowbreak{}score)} --- Line 21.
+\item \texttt{analyze(\allowbreak{}texts)} --- Line 25. Returns one \{label, score (-1..1), model\} per text.
+\item \texttt{engine(\allowbreak{})} --- Line 36.
+\end{itemize}
+\subsubsection*{backend/app/services/sentiment\_index.py}
+\textit{Crypto Fear \& Greed Index (alternative.me, free, daily since 2018).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{fng\_\allowbreak{}frame(\allowbreak{}rows)} --- Line 9.
+\item \texttt{async fear\_\allowbreak{}greed(\allowbreak{}limit)} --- Line 18. Newest first.
+\end{itemize}
+\subsubsection*{backend/app/services/signals.py}
+\textit{Builds each coin's AI signal from live data: candles + funding + Fear \& Greed + BTC trend.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{SignalUnavailable} --- Line 22. Raised when a signal can't be computed from real inputs.
+\item \hspace*{1em}\texttt{\_\allowbreak{}\_\allowbreak{}init\_\allowbreak{}\_\allowbreak{}(\allowbreak{}self,\allowbreak{} symbol,\allowbreak{} missing)} --- Line 25.
+\item \texttt{async \_\allowbreak{}candles(\allowbreak{}symbol)} --- Line 31.
+\item \texttt{async \_\allowbreak{}funding(\allowbreak{}symbol)} --- Line 41.
+\item \texttt{async \_\allowbreak{}fng(\allowbreak{})} --- Line 49.
+\item \texttt{async signal\_\allowbreak{}for(\allowbreak{}symbol)} --- Line 57.
+\item \texttt{async all\_\allowbreak{}signals(\allowbreak{})} --- Line 93. Signals for every tracked coin that has real inputs right now (others are left out and logged).
+\end{itemize}
+\subsubsection*{backend/app/services/telegram.py}
+\textit{Optional Telegram alert delivery for one operator-configured chat.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async send\_\allowbreak{}alert(\allowbreak{}message)} --- Line 11.
+\end{itemize}
+\subsubsection*{backend/app/services/watcher.py}
+\textit{Background jobs: - every ALERT\_CHECK\_SECONDS: check price/risk alerts and P\&L limits, write notifications - every NEWS\_INGEST\_MINUTES: fetch news (with FinBERT sentiment) and add it to the RAG knowledge base - every LIST}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}remember\_\allowbreak{}external\_\allowbreak{}alert(\allowbreak{}event\_\allowbreak{}id)} --- Line 30.
+\item \texttt{async \_\allowbreak{}external\_\allowbreak{}alert\_\allowbreak{}messages(\allowbreak{})} --- Line 37.
+\item \texttt{\_\allowbreak{}describe(\allowbreak{}a)} --- Line 80.
+\item \texttt{async check\_\allowbreak{}once(\allowbreak{})} --- Line 91. Evaluate every active alert and limit once.
+\item \texttt{async alert\_\allowbreak{}loop(\allowbreak{})} --- Line 179.
+\item \texttt{async listings\_\allowbreak{}loop(\allowbreak{})} --- Line 188.
+\item \texttt{async news\_\allowbreak{}loop(\allowbreak{})} --- Line 198. Loads the knowledge base once, then keeps adding fresh news to it.
+\end{itemize}
+\subsubsection*{backend/app/services/whales.py}
+\textit{Large on-chain transfers ("whales").}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{classify(\allowbreak{}from\_\allowbreak{}type,\allowbreak{} to\_\allowbreak{}type)} --- Line 22.
+\item \texttt{async \_\allowbreak{}from\_\allowbreak{}whale\_\allowbreak{}alert(\allowbreak{})} --- Line 30.
+\item \texttt{summarize(\allowbreak{}txs)} --- Line 58.
+\item \texttt{async latest\_\allowbreak{}whales(\allowbreak{})} --- Line 72.
+\end{itemize}
+\subsubsection*{backend/app/test\_telegram.py}
+\textit{Send one safe test message using the local Telegram settings.}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{async run\_\allowbreak{}test(\allowbreak{})} --- Line 10.
+\end{itemize}
+\subsubsection*{backend/ml/train.py}
+\textit{Train the CryptoSense AI market-state models (XGBoost + LightGBM ensemble).}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \texttt{\_\allowbreak{}ms(\allowbreak{}days\_\allowbreak{}ago)} --- Line 46.
+\item \texttt{download\_\allowbreak{}klines(\allowbreak{}symbol,\allowbreak{} days)} --- Line 50.
+\item \texttt{download\_\allowbreak{}funding(\allowbreak{}symbol,\allowbreak{} days)} --- Line 67.
+\item \texttt{download\_\allowbreak{}fng(\allowbreak{})} --- Line 88.
+\item \texttt{load\_\allowbreak{}data(\allowbreak{}args)} --- Line 98. One labelled feature table per coin.
+\item \texttt{split\_\allowbreak{}ranges(\allowbreak{}n,\allowbreak{} gap)} --- Line 133. Row ranges for train / val / test inside one coin's table (chronological, with gaps).
+\item \texttt{report(\allowbreak{}name,\allowbreak{} y,\allowbreak{} proba)} --- Line 140.
+\item \texttt{main(\allowbreak{})} --- Line 160.
+\end{itemize}
+\subsection{Python Inventory Summary}
+A total of 323 class, function and method declarations were indexed in 49 files across \texttt{backend/app} and \texttt{backend/ml} with Python's \texttt{ast} module. Descriptions are the first sentence of each docstring; entries without a docstring list only their source line.

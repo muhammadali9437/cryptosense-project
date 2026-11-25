@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/liquidation_models.dart';
 import '../models/models.dart';
+import '../utils/format.dart';
 
 /// Error message from the backend (e.g. "Wrong email or password.").
 class ApiException implements Exception {
@@ -54,13 +56,8 @@ class ApiService {
     if (query != null) uri = uri.replace(queryParameters: query);
     final req = http.Request(method, uri);
     req.headers['Content-Type'] = 'application/json';
-    if (token != null)
-      req.headers['Authorization'] = ['Bearer', token].join(' ');
-    if (token != null) req.headers['Authorization'] = 'Bearer $token';
     if (token != null) req.headers['Authorization'] = 'Bearer $token';
     if (body != null) req.body = jsonEncode(body);
-    if (token != null)
-      req.headers['Authorization'] = ['Bearer', token].join(' ');
 
     final res = await http.Response.fromStream(
         await _client.send(req).timeout(timeout));
@@ -279,28 +276,107 @@ class ApiService {
   }
 
   // ---------------------------------------------------------- liquidations
+  static LiquidationEvent _liquidation(dynamic j) => LiquidationEvent(
+        id: j['id'].toString(),
+        symbol: j['symbol'] as String,
+        position: j['position'] as String,
+        usd: _d(j['usd']),
+        price: _d(j['price']),
+        time: DateTime.fromMillisecondsSinceEpoch(j['time'] as int, isUtc: true)
+            .toLocal(),
+      );
+
+  static LiquidationTotals _totals(String label, dynamic j) => LiquidationTotals(
+        label: label,
+        longUsd: _d(j['long_liquidations_usd']),
+        shortUsd: _d(j['short_liquidations_usd']),
+        count: (j['event_count'] as num).toInt(),
+      );
+
   Future<LiquidationSnapshot> liquidations() async {
     final d = await _send('GET', '/api/liquidations', query: {'limit': '100'});
     final summary = d['summary'] as Map<String, dynamic>;
-    final items = [
-      for (final j in d['items'] as List)
-        LiquidationEvent(
-          id: j['id'].toString(),
-          symbol: j['symbol'] as String,
-          position: j['position'] as String,
-          usd: _d(j['usd']),
-          price: _d(j['price']),
-          time:
-              DateTime.fromMillisecondsSinceEpoch(j['time'] as int, isUtc: true)
-                  .toLocal(),
-        ),
-    ];
+    final frames = (d['timeframes'] as Map<String, dynamic>?) ?? const {};
     return LiquidationSnapshot(
       source: d['source'] as String,
       connected: d['connected'] as bool,
-      items: items,
+      items: [for (final j in d['items'] as List) _liquidation(j)],
       longUsd: _d(summary['long_liquidations_usd']),
       shortUsd: _d(summary['short_liquidations_usd']),
+      read: (summary['read'] as String?) ?? '',
+      timeframes: [for (final e in frames.entries) _totals(e.key, e.value)],
+      topSymbols: [
+        for (final j in (d['top_symbols'] as List?) ?? const [])
+          _totals(j['symbol'] as String, j),
+      ],
+      largest: d['largest'] == null ? null : _liquidation(d['largest']),
+    );
+  }
+
+  // --------------------------------------------- liquidation intelligence
+  Map<String, String> _liqQuery(String window, String? filter) => {
+        'window': window,
+        if (filter == 'other') 'group': 'other',
+        if (filter != null && filter != 'other') 'symbol': filter,
+      };
+
+  Future<LiqStats> liquidationStats(String window, String? filter) async =>
+      LiqStats.fromJson(await _send('GET', '/api/liquidations/stats',
+          query: _liqQuery(window, filter)));
+
+  Future<LiqAnomalies> liquidationAnomalies(String? symbol) async =>
+      LiqAnomalies.fromJson(await _send('GET', '/api/liquidations/anomalies',
+          query: {if (symbol != null && symbol != 'other') 'symbol': symbol}));
+
+  Future<LiqContext> liquidationContext(String symbol, String window) async =>
+      LiqContext.fromJson(await _send(
+          'GET', '/api/liquidations/context/$symbol',
+          query: {'window': window}));
+
+  Future<LiqExplanation> liquidationExplain(
+          String window, String? symbol) async =>
+      LiqExplanation.fromJson(await _send('GET', '/api/liquidations/explain',
+          query: {
+            'window': window,
+            if (symbol != null && symbol != 'other') 'symbol': symbol,
+          },
+          timeout: const Duration(seconds: 90)));
+
+  // ------------------------------------------------------- quiver quant
+  Future<SmartMoneySnapshot> smartMoney() async {
+    final d = await _send('GET', '/api/quiver');
+    final status = d['status'] as Map<String, dynamic>;
+    final summary = d['summary'] as Map<String, dynamic>?;
+    return SmartMoneySnapshot(
+      live: d['source'] == 'quiver',
+      congressStatus: status['congress'] as String,
+      insiderStatus: status['insiders'] as String,
+      read: (summary?['read'] as String?) ?? '',
+      note: (d['note'] as String?) ?? '',
+      congress: [
+        for (final j in d['congress'] as List)
+          SmartMoneyTrade(
+            ticker: j['ticker'] as String,
+            who: j['who'] as String,
+            detail: [j['party'], j['chamber']]
+                .where((v) => v != null && v.toString().isNotEmpty)
+                .join(', '),
+            isBuy: j['side'] == 'buy',
+            amount: j['range'] as String,
+            time: _t(j['traded_at']),
+          ),
+      ],
+      insiders: [
+        for (final j in d['insiders'] as List)
+          SmartMoneyTrade(
+            ticker: j['ticker'] as String,
+            who: j['who'] as String,
+            detail: (j['title'] as String?) ?? '',
+            isBuy: j['side'] == 'buy',
+            amount: Fmt.compact(_d(j['usd'])),
+            time: _t(j['traded_at']),
+          ),
+      ],
     );
   }
 
@@ -354,7 +430,7 @@ class ApiService {
   static PriceAlert _alert(dynamic j) => PriceAlert(
         id: j['id'].toString(),
         symbol: j['symbol'] as String,
-        kind: AlertKind.values.byName(j['kind'] as String),
+        kind: AlertKind.fromApi(j['kind'] as String),
         value: _d(j['value']),
         active: j['active'] as bool,
         triggeredAt: j['triggered_at'] == null ? null : _t(j['triggered_at']),
@@ -366,7 +442,7 @@ class ApiService {
   Future<PriceAlert> createAlert(
           String symbol, AlertKind kind, double value) async =>
       _alert(await _send('POST', '/api/alerts',
-          body: {'symbol': symbol, 'kind': kind.name, 'value': value}));
+          body: {'symbol': symbol, 'kind': kind.api, 'value': value}));
 
   Future<PriceAlert> toggleAlert(String id) async =>
       _alert(await _send('PATCH', '/api/alerts/$id/toggle'));

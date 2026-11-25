@@ -62,7 +62,7 @@ class ListingsScreen extends StatelessWidget {
             ),
             DemoNote(app.listingsLive
                 ? 'Live from Binance: coins listed in the last 60 days, rated by volatility and volume.'
-                : 'Demo listings. Start the backend to scan Binance for real new listings.'),
+                : 'New listings unavailable. Start the backend to scan Binance for real new listings.'),
           ],
         ),
       ),

@@ -3,10 +3,7 @@
 What goes in: Academy lessons, app guide and methodology (app/knowledge/*.md),
 the latest news with sentiment, and the latest AI signal for each coin.
 
-Search engine, best available first:
-1. Dense: sentence-transformers embeddings (all-MiniLM-L6-v2) stored in ChromaDB
-   -> finds text with the same MEANING ("coin crash" finds "prices plunge").
-2. Sparse: TF-IDF keyword search (scikit-learn) -> works with no extra installs.
+Search engine: TF-IDF keyword search (scikit-learn, word pairs included), saved to a JSON file.
 """
 import hashlib
 import json
@@ -39,36 +36,6 @@ def load_markdown_docs() -> list[dict]:
             docs.append({"id": f"kb:{path.stem}:{_id(title)}", "text": f"{title}. {body.strip()}",
                          "meta": {"kind": path.stem, "title": title.strip(), "url": ""}})
     return docs
-
-
-class _Dense:
-    """ChromaDB + sentence-transformers."""
-    name = "dense (MiniLM + ChromaDB)"
-
-    def __init__(self):
-        import chromadb
-        from sentence_transformers import SentenceTransformer
-        self.model = SentenceTransformer(settings.embed_model)
-        client = chromadb.PersistentClient(path=settings.rag_dir)
-        self.col = client.get_or_create_collection("cryptosense", metadata={"hnsw:space": "cosine"})
-
-    def upsert(self, docs: list[dict]) -> None:
-        if not docs:
-            return
-        vecs = self.model.encode([d["text"] for d in docs], normalize_embeddings=True).tolist()
-        self.col.upsert(ids=[d["id"] for d in docs], documents=[d["text"] for d in docs],
-                        metadatas=[d["meta"] for d in docs], embeddings=vecs)
-
-    def search(self, query: str, k: int) -> list[dict]:
-        if self.col.count() == 0:
-            return []
-        q = self.model.encode([query], normalize_embeddings=True).tolist()
-        r = self.col.query(query_embeddings=q, n_results=min(k, self.col.count()))
-        return [{"text": t, "meta": m, "score": round(1 - d, 3)}
-                for t, m, d in zip(r["documents"][0], r["metadatas"][0], r["distances"][0])]
-
-    def count(self) -> int:
-        return self.col.count()
 
 
 class _Sparse:
@@ -122,11 +89,7 @@ class KnowledgeBase:
     def store(self):
         with self._lock:
             if self._store is None:
-                try:
-                    self._store = _Dense()
-                except Exception as e:
-                    log.info("Dense RAG not available (%s); using TF-IDF", e.__class__.__name__)
-                    self._store = _Sparse()
+                self._store = _Sparse()
                 log.info("RAG backend: %s", self._store.name)
             return self._store
 

@@ -323,12 +323,14 @@ class _PaperScreenState extends State<PaperScreen> {
     final app = context.app;
     final base = _symbol.replaceAll('USDT', '');
     final t = market.ticker(_symbol);
-    final price = t.price;
+    final price = t?.price ?? 0; // 0 = no live price; previews below say so
     final pos = a.positionOf(_symbol);
     final risk = app.risks[_symbol];
 
     String preview;
-    if (_side == 'buy') {
+    if (t == null) {
+      preview = 'Live price unavailable, so no estimate can be shown.';
+    } else if (_side == 'buy') {
       final usd = double.tryParse(_amount.text.replaceAll(',', '').trim()) ?? 0;
       final coins = price <= 0 ? 0 : (usd - usd * 0.001) / price;
       preview = usd < 1
@@ -345,7 +347,9 @@ class _PaperScreenState extends State<PaperScreen> {
 
     return Panel(
       title: 'Place an order',
-      subtitle: '$base is ${Fmt.usd(price)} right now',
+      subtitle: t == null
+          ? '$base: live price unavailable right now'
+          : '$base is ${Fmt.usd(price)} right now',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

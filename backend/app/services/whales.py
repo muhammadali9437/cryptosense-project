@@ -1,10 +1,11 @@
 """Large on-chain transfers ("whales").
 
-Source: Whale Alert API when WHALE_ALERT_KEY is set, otherwise a clearly-marked demo feed.
+Source: Whale Alert API when WHALE_ALERT_KEY is set. Without a key, or if the API fails, the
+feed is reported as "unavailable"; no made-up transfers are produced.
 """
-import random
+import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import httpx
 
@@ -54,28 +55,6 @@ async def _from_whale_alert() -> list[dict]:
     return out
 
 
-def _demo(n: int = 15) -> list[dict]:
-    rng = random.Random(int(time.time() // 60))
-    exchanges = ["Binance", "Coinbase", "Kraken", "OKX", "Bybit"]
-    coins = [("BTC", 67000, 120, 950), ("ETH", 3500, 1800, 16000), ("SOL", 148, 40000, 260000), ("USDT", 1, 15e6, 120e6)]
-    now = datetime.now(timezone.utc)
-    out = []
-    for i in range(n):
-        coin, price, lo, hi = rng.choice(coins)
-        amount = rng.uniform(lo, hi)
-        flow = rng.choice(list(MEANING))
-        ex = rng.choice(exchanges)
-        out.append({
-            "id": f"demo-{int(time.time() // 60)}-{i}",
-            "coin": coin, "amount": amount, "usd": amount * price,
-            "from": ex if flow == "from_exchange" else "Unknown wallet",
-            "to": ex if flow == "to_exchange" else "Unknown wallet",
-            "time": (now - timedelta(minutes=3 + i * 4)).isoformat(),
-            "flow": flow, "meaning": MEANING[flow],
-        })
-    return out
-
-
 def summarize(txs: list[dict]) -> dict:
     inflow = sum(t["usd"] for t in txs if t["flow"] == "to_exchange")
     outflow = sum(t["usd"] for t in txs if t["flow"] == "from_exchange")
@@ -92,14 +71,15 @@ def summarize(txs: list[dict]) -> dict:
 
 async def latest_whales() -> dict:
     async def build():
-        txs, source = [], "demo"
-        if settings.whale_alert_key:
-            try:
-                txs, source = await _from_whale_alert(), "whale_alert"
-            except Exception:
-                txs = []
-        if not txs:
-            txs, source = _demo(), "demo"
+        if not settings.whale_alert_key:
+            return {"source": "unavailable", "reason": "no_key", "summary": summarize([]), "items": [],
+                    "note": "Set WHALE_ALERT_KEY in backend/.env for live whale transfers."}
+        try:
+            txs = await _from_whale_alert()
+        except Exception as exc:
+            logging.getLogger("cryptosense.whales").warning("Whale Alert failed: %s", exc.__class__.__name__)
+            return {"source": "unavailable", "reason": "provider_error", "summary": summarize([]), "items": [],
+                    "note": "Whale Alert could not be reached."}
         txs.sort(key=lambda t: t["time"], reverse=True)
-        return {"source": source, "summary": summarize(txs), "items": txs}
+        return {"source": "whale_alert", "summary": summarize(txs), "items": txs}
     return await cached("whales", 60, build)

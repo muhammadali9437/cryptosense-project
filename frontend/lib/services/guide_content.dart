@@ -43,7 +43,7 @@ class GuideContent {
     'signals': Explainer(
         'How the AI signals work',
         [
-          'Our models (Random Forest, XGBoost and SVM) were trained on years of Binance price history using indicators such as RSI, MACD, Bollinger Bands, ATR and volume. They do not guess an exact price. They label the coming period as bullish, bearish or neutral.',
+          'Our models (XGBoost and LightGBM) were trained on several years of Binance price history using indicators such as RSI, MACD, Bollinger Bands, ATR, volume, futures funding and the Fear & Greed index. They do not guess an exact price. They label the next 24 hours as bullish, bearish or neutral.',
           'Confidence shows how sure the model is, based on patterns it has seen before. It is not a guarantee. A 90% bullish signal can still be wrong when news or a whale changes the picture.',
         ],
         'Tap any signal to see the reasons behind it, then check them against the chart yourself.'),

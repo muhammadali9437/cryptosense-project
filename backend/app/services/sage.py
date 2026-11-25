@@ -2,19 +2,26 @@
 
 1. Retrieve: search the knowledge base (lessons, news, signals) for the question.
 2. Augment: put those passages + live prices + the user's portfolio into the prompt.
-3. Generate: an LLM (Groq, OpenAI-compatible) writes the answer and cites [1], [2]...
-Without an LLM key (or if it fails) Sage answers with rules + live data, and still
+3. Generate: Claude (Anthropic SDK) writes the answer and cites [1], [2]... when
+   ANTHROPIC_API_KEY is set; otherwise (or if Claude fails) an OpenAI-compatible LLM
+   (Groq by default) is tried.
+Without any LLM key (or if all fail) Sage answers with rules + live data, and still
 returns the most relevant sources.
 """
 import asyncio
 import json
+import logging
 import re
 
+import anthropic
 import httpx
 
 from ..config import settings
 from .market import NAMES
 from .rag import kb
+
+log = logging.getLogger("cryptosense.sage")
+_claude_client: anthropic.AsyncAnthropic | None = None
 
 SYSTEM_PROMPT = """You are CryptoSentinel Risk Copilot, Sage inside CryptoSense AI, a crypto market analytics app.
 Reply in the user's language: simple English, Urdu script, or Roman Urdu as appropriate.
@@ -38,6 +45,11 @@ async def answer(question: str, context: dict) -> tuple[str, str, list[dict]]:
                 "url": h["meta"].get("url", ""), "published_at": h["meta"].get("published_at")}
                for i, h in enumerate(hits)]
 
+    if settings.anthropic_api_key:
+        try:
+            return await _claude(question, context, hits), "llm", sources
+        except Exception as exc:
+            log.warning("Claude answer failed, falling back: %s", exc.__class__.__name__)
     if settings.llm_api_key:
         try:
             return await _llm(question, context, hits), "llm", sources
@@ -80,16 +92,71 @@ def _specialist_summary(ctx: dict, name: str) -> str | None:
     return report["summary"] if report else None
 
 
-async def _llm(question: str, context: dict, hits: list[dict]) -> str:
+def _user_prompt(question: str, context: dict, hits: list[dict]) -> str:
     numbered = "\n\n".join(f"[{i + 1}] ({h['meta'].get('kind')}) {h['text'][:900]}" for i, h in enumerate(hits))
+    return (f"SOURCES:\n{numbered or '(none)'}\n\nLIVE DATA:\n{_live_summary(context)}"
+            f"\n\nQUESTION: {question}")
+
+
+def _claude_api() -> anthropic.AsyncAnthropic:
+    global _claude_client
+    if _claude_client is None:
+        _claude_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=60, max_retries=1)
+    return _claude_client
+
+
+async def _claude_text(system: str, user: str) -> str:
+    response = await _claude_api().beta.messages.create(
+        model=settings.claude_model,
+        max_tokens=16000,
+        system=system,
+        output_config={"effort": settings.claude_effort},
+        # If a safety classifier declines, the API re-runs the request on a fallback model.
+        betas=["server-side-fallback-2026-07-01"],
+        fallbacks="default",
+        messages=[{"role": "user", "content": user}],
+    )
+    if response.stop_reason == "refusal":
+        raise ValueError("Claude declined the request")
+    text = "".join(b.text for b in response.content if b.type == "text").strip()
+    if not text:
+        raise ValueError(f"empty Claude answer (stop_reason={response.stop_reason})")
+    return text
+
+
+async def _claude(question: str, context: dict, hits: list[dict]) -> str:
+    return await _claude_text(SYSTEM_PROMPT, _user_prompt(question, context, hits))
+
+
+async def complete(system: str, user: str) -> tuple[str, str] | None:
+    """Generic text completion for other features: Claude first, then the OpenAI-compatible
+    LLM (Groq, or xAI Grok via LLM_BASE_URL=https://api.x.ai/v1). Returns (text, provider) or
+    None when no LLM is configured or all of them fail."""
+    if settings.anthropic_api_key:
+        try:
+            return await _claude_text(system, user), "claude"
+        except Exception as exc:
+            log.warning("Claude completion failed: %s", exc.__class__.__name__)
+    if settings.llm_api_key:
+        try:
+            return await _openai_text(system, user), "openai_compatible"
+        except Exception as exc:
+            log.warning("LLM completion failed: %s", exc.__class__.__name__)
+    return None
+
+
+async def _llm(question: str, context: dict, hits: list[dict]) -> str:
+    return await _openai_text(SYSTEM_PROMPT, _user_prompt(question, context, hits))
+
+
+async def _openai_text(system: str, user: str) -> str:
     payload = {
         "model": settings.llm_model,
         "temperature": 0.3,
         "max_tokens": 700,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"SOURCES:\n{numbered or '(none)'}\n\nLIVE DATA:\n{_live_summary(context)}"
-                                        f"\n\nQUESTION: {question}"},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
         ],
     }
     if "gpt-oss" in settings.llm_model:

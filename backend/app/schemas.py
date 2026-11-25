@@ -57,17 +57,25 @@ class PortfolioOut(BaseModel):
     pnl: float
     pnl_pct: float
     holdings: list[HoldingOut]
+    prices_live: bool = True  # False = at least one holding has no live price (valued at its buy price)
 
 
 class AlertIn(BaseModel):
     symbol: str = Field(min_length=5, max_length=20)
-    kind: Literal["above", "below", "move", "risk"]
+    kind: Literal["above", "below", "move", "risk",
+                  "liq_large", "liq_spike", "liq_long", "liq_short", "liq_imbal"]
     value: float = Field(gt=0)
 
     @model_validator(mode="after")
     def validate_risk_threshold(self):
         if self.kind == "risk" and self.value > 100:
             raise ValueError("Risk alert threshold must not exceed 100.")
+        if self.kind == "liq_large" and self.value < 1000:
+            raise ValueError("Large-liquidation alerts need a threshold of at least $1,000.")
+        if self.kind in ("liq_spike", "liq_long", "liq_short") and not 1 <= self.value <= 50:
+            raise ValueError("Spike sensitivity (robust z-score) must be between 1 and 50.")
+        if self.kind == "liq_imbal" and self.value > 100:
+            raise ValueError("Imbalance shift must not exceed 100 percentage points.")
         return self
 
 

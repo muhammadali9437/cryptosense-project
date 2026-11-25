@@ -14,6 +14,7 @@ import 'chat_screen.dart';
 import 'dashboard_screen.dart';
 import 'limits_screen.dart';
 import 'listings_screen.dart';
+import 'liquidations_screen.dart';
 import 'news_screen.dart';
 import 'paper_screen.dart';
 import 'portfolio_screen.dart';
@@ -44,6 +45,7 @@ class _ShellState extends State<Shell> {
     (_) => const AcademyScreen(),
     (_) => const ChatScreen(),
     (_) => const PaperScreen(),
+    (_) => const LiquidationsScreen(),
   ];
 
   @override
@@ -53,9 +55,10 @@ class _ShellState extends State<Shell> {
     _app = context.app;
     _market.addListener(_checkAlerts);
     _app.onNotify = (message) {
-      if (mounted)
+      if (mounted) {
         toast(context, message,
             color: AppColors.warn, icon: Icons.notifications_active_rounded);
+      }
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_app.tourSeen) showTour(context);

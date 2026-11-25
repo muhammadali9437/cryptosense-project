@@ -1,6 +1,11 @@
-"""Live prices for the tracked coins (cached a few seconds), with a demo fallback."""
+"""Live prices for the tracked coins (cached a few seconds).
+
+If Binance can't be reached the result is empty: no made-up prices are returned.
+"""
+import logging
+
 from ..config import settings
-from . import binance, demo
+from . import binance
 from .cache import cached
 
 NAMES = {
@@ -15,13 +20,9 @@ async def prices() -> dict[str, dict]:
         try:
             rows = await binance.tickers(settings.symbol_list)
             return {r["symbol"]: {**binance.simple_ticker(r), "live": True} for r in rows}
-        except Exception:
-            out = {}
-            for s in settings.symbol_list:
-                p = demo.SEED_PRICES.get(s, 100.0)
-                out[s] = {"symbol": s, "price": p, "change_pct": 0.0, "high": p * 1.02,
-                          "low": p * 0.98, "quote_volume": 0.0, "live": False}
-            return out
+        except Exception as exc:
+            logging.getLogger("cryptosense.market").warning("Binance prices unavailable: %s", exc.__class__.__name__)
+            return {}
     return await cached("prices", 5, build)
 
 

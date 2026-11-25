@@ -1,7 +1,7 @@
 """Database tables."""
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -41,7 +41,13 @@ class Holding(Base):
 
 
 class Alert(Base):
-    """Price alert. kind = above | below | move (24h % move)."""
+    """User alert.
+
+    One-shot kinds: above | below | move (24h % move) | risk.
+    Recurring liquidation kinds (re-arm after LIQ_ALERT_COOLDOWN_MINUTES):
+    liq_large (single event >= value USD), liq_spike / liq_long / liq_short (robust z >= value),
+    liq_imbal (long-share shift >= value percentage points).
+    """
     __tablename__ = "alerts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -93,3 +99,32 @@ class RiskPrediction(Base):
     level: Mapped[str] = mapped_column(String(10))
     model: Mapped[str] = mapped_column(String(80), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+
+class LiquidationEvent(Base):
+    """One observed Binance futures liquidation (forceOrder stream snapshot).
+
+    The stream sends at most one event per symbol per second, so these rows are a sample of
+    liquidation activity, not a complete record. Times are UTC epoch milliseconds.
+    """
+    __tablename__ = "liquidation_events"
+    __table_args__ = (
+        Index("ix_liq_symbol_time", "symbol", "event_ms"),
+        Index("ix_liq_bucket", "bucket_5m"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_key: Mapped[str] = mapped_column(String(120), unique=True)
+    symbol: Mapped[str] = mapped_column(String(30))
+    side: Mapped[str] = mapped_column(String(4))          # BUY | SELL (the forced order's side)
+    position: Mapped[str] = mapped_column(String(5))      # long (forced SELL) | short (forced BUY)
+    order_type: Mapped[str] = mapped_column(String(12), default="")
+    status: Mapped[str] = mapped_column(String(20), default="")
+    quantity: Mapped[float] = mapped_column(Float)        # original quantity (q)
+    filled_qty: Mapped[float] = mapped_column(Float)      # accumulated filled quantity (z)
+    price: Mapped[float] = mapped_column(Float)           # order (bankruptcy) price (p)
+    avg_price: Mapped[float] = mapped_column(Float)       # average fill price (ap)
+    usd: Mapped[float] = mapped_column(Float, default=0)
+    usd_valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    event_ms: Mapped[int] = mapped_column(BigInteger, index=True)
+    bucket_5m: Mapped[int] = mapped_column(BigInteger)    # event_ms // 300000, for fast aggregation
+    received_ms: Mapped[int] = mapped_column(BigInteger)

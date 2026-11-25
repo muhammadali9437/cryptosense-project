@@ -56,7 +56,7 @@ class SpecialistAgentTests(unittest.TestCase):
     def test_market_agent_marks_fallback_data_as_partial(self):
         report = MarketIntelligenceAgent.analyze("BTC", _context(live=False))
         self.assertEqual(report["status"], "partial")
-        self.assertIn("fallback/demo", report["summary"])
+        self.assertIn("live figures are missing", report["summary"])
 
     def test_risk_agent_reports_disagreement_and_explanation_factor(self):
         report = RiskAssessmentAgent.analyze("BTC risk", _context())
@@ -65,24 +65,24 @@ class SpecialistAgentTests(unittest.TestCase):
         self.assertTrue(market["top_factor"]["name"])
         self.assertIn("models disagree", report["summary"])
 
-    def test_demo_whale_events_are_not_reported_as_live(self):
+    def test_unavailable_whale_feed_is_not_reported_as_live(self):
         async def run():
             with patch("app.services.agents.whales.latest_whales", new=AsyncMock(
-                return_value={"source": "demo", "items": [{"usd": 10_000_000}]}
+                return_value={"source": "unavailable", "items": [{"usd": 10_000_000}]}
             )):
                 return await OnChainAgent.analyze("BTC whale activity", _context())
 
         report = self._run_async(run())
         self.assertEqual(report["status"], "unavailable")
         self.assertEqual(report["data"]["live_transfer_count"], 0)
-        self.assertIn("excluded", report["summary"])
+        self.assertIn("No live on-chain feed", report["summary"])
 
-    def test_demo_news_is_not_used_as_live_sentiment(self):
+    def test_unavailable_news_is_not_used_as_live_sentiment(self):
         async def run():
             with (
                 patch("app.services.agents.latest_news", new=AsyncMock(return_value={
-                    "source": "demo",
-                    "items": [{"title": "Sample", "sentiment": "bullish", "source": "Demo"}],
+                    "source": "unavailable",
+                    "items": [{"title": "Sample", "sentiment": "bullish", "source": "Test"}],
                 })),
                 patch("app.services.agents._fear_greed", new=AsyncMock(return_value=None)),
             ):
@@ -91,7 +91,7 @@ class SpecialistAgentTests(unittest.TestCase):
         report = self._run_async(run())
         self.assertEqual(report["status"], "unavailable")
         self.assertEqual(report["data"]["headlines"], [])
-        self.assertIn("demo headlines were excluded", report["summary"])
+        self.assertIn("No live news headlines", report["summary"])
 
     def test_derivatives_agent_normalizes_live_binance_fields(self):
         async def run():

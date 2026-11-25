@@ -75,7 +75,7 @@ class Candle {
   bool get isUp => close >= open;
 }
 
-/// Output of the ML model (Random Forest / XGBoost / SVM) for one coin.
+/// Output of the ML ensemble (XGBoost + LightGBM) for one coin.
 class AiSignal {
   const AiSignal({
     required this.symbol,
@@ -116,7 +116,33 @@ class Holding {
   String get base => symbol.replaceAll('USDT', '');
 }
 
-enum AlertKind { above, below, move, risk }
+enum AlertKind {
+  above,
+  below,
+  move,
+  risk,
+  // Liquidation alerts: checked by the backend only, re-armed after a cooldown.
+  liqLarge,
+  liqSpike,
+  liqLong,
+  liqShort,
+  liqImbal;
+
+  /// Name used by the backend API.
+  String get api => switch (this) {
+        liqLarge => 'liq_large',
+        liqSpike => 'liq_spike',
+        liqLong => 'liq_long',
+        liqShort => 'liq_short',
+        liqImbal => 'liq_imbal',
+        _ => name,
+      };
+
+  static AlertKind fromApi(String v) =>
+      AlertKind.values.firstWhere((k) => k.api == v);
+
+  bool get isLiquidation => api.startsWith('liq_');
+}
 
 class PriceAlert {
   PriceAlert({
@@ -143,6 +169,16 @@ class PriceAlert {
         AlertKind.move =>
           '$base moves more than ${value.toStringAsFixed(0)}% in 24h',
         AlertKind.risk => '$base risk reaches ${value.toStringAsFixed(0)}%',
+        AlertKind.liqLarge =>
+          'a single $base liquidation of ${Fmt.compact(value)}+ is observed',
+        AlertKind.liqSpike =>
+          '$base liquidation activity is unusual (sensitivity ${value.toStringAsFixed(0)})',
+        AlertKind.liqLong =>
+          '$base long liquidations spike (sensitivity ${value.toStringAsFixed(0)})',
+        AlertKind.liqShort =>
+          '$base short liquidations spike (sensitivity ${value.toStringAsFixed(0)})',
+        AlertKind.liqImbal =>
+          '$base long/short liquidation mix shifts ${value.toStringAsFixed(0)}+ points',
       };
 }
 
@@ -225,6 +261,22 @@ class LiquidationEvent {
   final DateTime time;
 }
 
+/// Long/short liquidation totals for one symbol or one time window.
+class LiquidationTotals {
+  const LiquidationTotals({
+    required this.label,
+    required this.longUsd,
+    required this.shortUsd,
+    required this.count,
+  });
+
+  final String label;
+  final double longUsd;
+  final double shortUsd;
+  final int count;
+  double get totalUsd => longUsd + shortUsd;
+}
+
 class LiquidationSnapshot {
   const LiquidationSnapshot({
     required this.source,
@@ -232,6 +284,10 @@ class LiquidationSnapshot {
     required this.items,
     required this.longUsd,
     required this.shortUsd,
+    this.read = '',
+    this.timeframes = const [],
+    this.topSymbols = const [],
+    this.largest,
   });
 
   final String source;
@@ -239,6 +295,49 @@ class LiquidationSnapshot {
   final List<LiquidationEvent> items;
   final double longUsd;
   final double shortUsd;
+  final String read;
+  final List<LiquidationTotals> timeframes;
+  final List<LiquidationTotals> topSymbols;
+  final LiquidationEvent? largest;
+}
+
+/// A Congress or SEC Form 4 insider trade in a crypto-linked stock (Quiver Quant).
+class SmartMoneyTrade {
+  const SmartMoneyTrade({
+    required this.ticker,
+    required this.who,
+    required this.detail,
+    required this.isBuy,
+    required this.amount,
+    required this.time,
+  });
+
+  final String ticker;
+  final String who;
+  final String detail;
+  final bool isBuy;
+  final String amount;
+  final DateTime time;
+}
+
+class SmartMoneySnapshot {
+  const SmartMoneySnapshot({
+    required this.live,
+    required this.congressStatus,
+    required this.insiderStatus,
+    required this.read,
+    required this.congress,
+    required this.insiders,
+    required this.note,
+  });
+
+  final bool live;
+  final String congressStatus;
+  final String insiderStatus;
+  final String read;
+  final List<SmartMoneyTrade> congress;
+  final List<SmartMoneyTrade> insiders;
+  final String note;
 }
 
 class NewListing {

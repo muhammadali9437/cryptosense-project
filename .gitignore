@@ -35,3 +35,4 @@ frontend/coverage/
 .idea/
 .DS_Store
 Thumbs.db
+backend/ml/backtest_results/

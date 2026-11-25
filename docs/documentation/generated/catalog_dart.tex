@@ -1,0 +1,317 @@
+\subsubsection*{frontend/lib/main.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{CryptoSenseApp} --- Line 16. Root widget. Creates the two shared services (market data + app state) and makes them available to every screen through [AppScope]. Members: \texttt{createState(\allowbreak{})} (20).
+\item \textbf{Class} \texttt{\_\allowbreak{}CryptoSenseAppState} --- Line 23. Members: \texttt{initState(\allowbreak{})} (29), \texttt{dispose(\allowbreak{})} (36), \texttt{build(\allowbreak{})} (43).
+\item Top-level \texttt{main(\allowbreak{})} --- Line 10.
+\end{itemize}
+\subsubsection*{frontend/lib/models/liquidation\_models.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{LiqEvent} --- Line 10. Members: \texttt{isLong(\allowbreak{})} (27).
+\item \textbf{Class} \texttt{LiqTotals} --- Line 30.
+\item \textbf{Class} \texttt{LiqPoint} --- Line 55.
+\item \textbf{Class} \texttt{LiqStream} --- Line 67.
+\item \textbf{Class} \texttt{LiqStats} --- Line 81.
+\item \textbf{Class} \texttt{LiqAnomaly} --- Line 118.
+\item \textbf{Class} \texttt{LiqAnomalies} --- Line 132.
+\item \textbf{Class} \texttt{LiqScenario} --- Line 146.
+\item \textbf{Class} \texttt{LiqContext} --- Line 162.
+\item \textbf{Class} \texttt{LiqExplanation} --- Line 190.
+\item Top-level \texttt{\_\allowbreak{}d(\allowbreak{})} --- Line 5.
+\item Top-level \texttt{\_\allowbreak{}dn(\allowbreak{})} --- Line 6.
+\item Top-level \texttt{\_\allowbreak{}ms(\allowbreak{})} --- Line 7.
+\end{itemize}
+\subsubsection*{frontend/lib/models/models.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Enum} \texttt{Trend} --- Line 7. Every data shape the frontend works with lives in this one file.
+\item \textbf{Extension} \texttt{TrendLabel} --- Line 9. Members: \texttt{label(\allowbreak{})} (10).
+\item \textbf{Class} \texttt{Ticker} --- Line 18. Live 24h market snapshot of one trading pair (e.g. BTCUSDT). Members: \texttt{base(\allowbreak{})} (39), \texttt{copyWith(\allowbreak{})} (41).
+\item \textbf{Class} \texttt{Candle} --- Line 62. One OHLCV candle. Members: \texttt{isUp(\allowbreak{})} (75).
+\item \textbf{Class} \texttt{AiSignal} --- Line 79. Output of the ML ensemble (XGBoost + LightGBM) for one coin. Members: \texttt{base(\allowbreak{})} (96).
+\item \textbf{Class} \texttt{Holding} --- Line 100. A coin the user owns, plus their personal profit/loss limits. Members: \texttt{base(\allowbreak{})} (116).
+\item \textbf{Enum} \texttt{AlertKind} --- Line 119. Members: \texttt{api(\allowbreak{})} (132), \texttt{fromApi(\allowbreak{})} (141), \texttt{isLiquidation(\allowbreak{})} (144).
+\item \textbf{Class} \texttt{PriceAlert} --- Line 147. Members: \texttt{base(\allowbreak{})} (164), \texttt{describe(\allowbreak{})} (166).
+\item \textbf{Class} \texttt{NewsItem} --- Line 185.
+\item \textbf{Enum} \texttt{WhaleFlow} --- Line 205.
+\item \textbf{Extension} \texttt{WhaleFlowText} --- Line 207. Members: \texttt{label(\allowbreak{})} (208), \texttt{meaning(\allowbreak{})} (214).
+\item \textbf{Class} \texttt{WhaleTx} --- Line 224.
+\item \textbf{Class} \texttt{LiquidationEvent} --- Line 246.
+\item \textbf{Class} \texttt{LiquidationTotals} --- Line 265. Long/short liquidation totals for one symbol or one time window. Members: \texttt{totalUsd(\allowbreak{})} (277).
+\item \textbf{Class} \texttt{LiquidationSnapshot} --- Line 280.
+\item \textbf{Class} \texttt{SmartMoneyTrade} --- Line 305. A Congress or SEC Form 4 insider trade in a crypto-linked stock (Quiver Quant).
+\item \textbf{Class} \texttt{SmartMoneySnapshot} --- Line 323.
+\item \textbf{Class} \texttt{NewListing} --- Line 343.
+\item \textbf{Class} \texttt{Lesson} --- Line 365.
+\item \textbf{Class} \texttt{Explainer} --- Line 390. A plain-language explanation shown when the user taps a lightbulb button.
+\item \textbf{Class} \texttt{ChatSource} --- Line 399. A document Sage used to answer (from the backend RAG search).
+\item \textbf{Class} \texttt{AgentInsight} --- Line 407.
+\item \textbf{Class} \texttt{ChatMessage} --- Line 419.
+\item \textbf{Class} \texttt{RiskFactor} --- Line 436. One reason behind the AI risk score (e.g. "Price swings: 24/30 points").
+\item \textbf{Class} \texttt{RiskScore} --- Line 450. AI risk score of one coin: 0-100 \%, a level (low / moderate / high) and the reasons. Members: \texttt{base(\allowbreak{})} (465).
+\item \textbf{Class} \texttt{RiskModelVote} --- Line 468.
+\item \textbf{Class} \texttt{HistoricalTwin} --- Line 477.
+\item \textbf{Class} \texttt{KeyMarketLevel} --- Line 489.
+\item \textbf{Class} \texttt{RiskCopilotAnalysis} --- Line 511.
+\item \textbf{Class} \texttt{RiskSimulation} --- Line 531.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/academy\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AcademyScreen} --- Line 16. Academy: a numbered learning path that teaches how the market moves. Members: \texttt{build(\allowbreak{})} (20).
+\item \textbf{Class} \texttt{\_\allowbreak{}LessonRow} --- Line 74. Members: \texttt{build(\allowbreak{})} (82).
+\item Top-level \texttt{showLesson(\allowbreak{})} --- Line 149.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/alerts\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AlertsScreen} --- Line 14. Alerts: create price and risk alerts, switch them on/off, see what already fired. Members: \texttt{build(\allowbreak{})} (18).
+\item \textbf{Class} \texttt{\_\allowbreak{}AlertRow} --- Line 63. Members: \texttt{build(\allowbreak{})} (68).
+\item \textbf{Class} \texttt{\_\allowbreak{}EmptyAlerts} --- Line 158. Members: \texttt{build(\allowbreak{})} (163).
+\item \textbf{Class} \texttt{\_\allowbreak{}CreateAlertForm} --- Line 188. Members: \texttt{createState(\allowbreak{})} (192).
+\item \textbf{Class} \texttt{\_\allowbreak{}CreateAlertFormState} --- Line 195. Members: \texttt{\_\allowbreak{}isPercent(\allowbreak{})} (213), \texttt{didChangeDependencies(\allowbreak{})} (217), \texttt{\_\allowbreak{}suggest(\allowbreak{})} (223), \texttt{dispose(\allowbreak{})} (248), \texttt{\_\allowbreak{}parsed(\allowbreak{})} (253), \texttt{\_\allowbreak{}save(\allowbreak{})} (256), \texttt{build(\allowbreak{})} (294).
+\item Top-level \texttt{showCreateAlert(\allowbreak{})} --- Line 185.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/chat\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{ChatScreen} --- Line 13. Ask Sage: chat with the guide. Answers use live prices and your portfolio. Members: \texttt{createState(\allowbreak{})} (17).
+\item \textbf{Class} \texttt{\_\allowbreak{}ChatScreenState} --- Line 20. Members: \texttt{dispose(\allowbreak{})} (27), \texttt{\_\allowbreak{}send(\allowbreak{})} (34), \texttt{\_\allowbreak{}scrollToEnd(\allowbreak{})} (42), \texttt{build(\allowbreak{})} (54).
+\item \textbf{Class} \texttt{\_\allowbreak{}Bubble} --- Line 156. Members: \texttt{build(\allowbreak{})} (161).
+\item \textbf{Class} \texttt{\_\allowbreak{}AgentReports} --- Line 221. Members: \texttt{build(\allowbreak{})} (226).
+\item \textbf{Class} \texttt{\_\allowbreak{}Typing} --- Line 285. Members: \texttt{createState(\allowbreak{})} (289).
+\item \textbf{Class} \texttt{\_\allowbreak{}TypingState} --- Line 292. Members: \texttt{dispose(\allowbreak{})} (298), \texttt{build(\allowbreak{})} (304).
+\item \textbf{Class} \texttt{\_\allowbreak{}Suggestion} --- Line 345. Members: \texttt{build(\allowbreak{})} (351).
+\item \textbf{Class} \texttt{\_\allowbreak{}SourceChip} --- Line 370. One RAG source under a Sage answer, e.g. "[1] Funding rate and futures traders". Members: \texttt{build(\allowbreak{})} (376).
+\end{itemize}
+\subsubsection*{frontend/lib/screens/dashboard\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{DashboardScreen} --- Line 32. Overview page: Sage's market read + mood, live candle chart, AI signals, watchlist, and snapshots of whale moves and new listings. Members: \texttt{createState(\allowbreak{})} (36).
+\item \textbf{Class} \texttt{\_\allowbreak{}DashboardScreenState} --- Line 39. Members: \texttt{initState(\allowbreak{})} (47), \texttt{\_\allowbreak{}load(\allowbreak{})} (52), \texttt{\_\allowbreak{}pickSymbol(\allowbreak{})} (63), \texttt{\_\allowbreak{}pickInterval(\allowbreak{})} (69), \texttt{\_\allowbreak{}withLivePrice(\allowbreak{})} (76), \texttt{build(\allowbreak{})} (93).
+\item \textbf{Class} \texttt{\_\allowbreak{}MarketRead} --- Line 173. Members: \texttt{build(\allowbreak{})} (189).
+\item \textbf{Class} \texttt{\_\allowbreak{}StatStrip} --- Line 297. Members: \texttt{build(\allowbreak{})} (305).
+\item \textbf{Class} \texttt{\_\allowbreak{}SignalsPanel} --- Line 381. Members: \texttt{build(\allowbreak{})} (385).
+\item \textbf{Class} \texttt{\_\allowbreak{}SignalTile} --- Line 405. Members: \texttt{build(\allowbreak{})} (410).
+\item \textbf{Class} \texttt{\_\allowbreak{}Watchlist} --- Line 537. Members: \texttt{build(\allowbreak{})} (543).
+\item \textbf{Class} \texttt{\_\allowbreak{}Discover} --- Line 641. Members: \texttt{build(\allowbreak{})} (645).
+\item \textbf{Class} \texttt{\_\allowbreak{}MiniWhale} --- Line 713. Members: \texttt{build(\allowbreak{})} (718).
+\item \textbf{Class} \texttt{\_\allowbreak{}RiskPanel} --- Line 764. Members: \texttt{levelColor(\allowbreak{})} (768), \texttt{levelLabel(\allowbreak{})} (774), \texttt{build(\allowbreak{})} (781), \texttt{\_\allowbreak{}factorRow(\allowbreak{})} (868).
+\item \textbf{Class} \texttt{\_\allowbreak{}RiskCopilotInsights} --- Line 908. Members: \texttt{createState(\allowbreak{})} (913).
+\item \textbf{Class} \texttt{\_\allowbreak{}RiskCopilotInsightsState} --- Line 916. Members: \texttt{initState(\allowbreak{})} (928), \texttt{didUpdateWidget(\allowbreak{})} (935), \texttt{\_\allowbreak{}load(\allowbreak{})} (945), \texttt{\_\allowbreak{}simulate(\allowbreak{})} (967), \texttt{build(\allowbreak{})} (991).
+\item \textbf{Class} \texttt{\_\allowbreak{}RiskBar} --- Line 1154. Green-to-red bar with a marker at the risk percentage. Members: \texttt{build(\allowbreak{})} (1159).
+\item Top-level \texttt{showSignal(\allowbreak{})} --- Line 465.
+\item Top-level \texttt{whaleColor(\allowbreak{})} --- Line 751.
+\item Top-level \texttt{whaleIcon(\allowbreak{})} --- Line 757.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/limits\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{LimitsScreen} --- Line 19. Profit \& loss limits: a stop-loss and take-profit for every holding, with a live bar showing where the position sits between the two. Members: \texttt{build(\allowbreak{})} (23).
+\item \textbf{Class} \texttt{\_\allowbreak{}LimitCard} --- Line 66. Members: \texttt{createState(\allowbreak{})} (71).
+\item \textbf{Class} \texttt{\_\allowbreak{}LimitCardState} --- Line 74. Members: \texttt{\_\allowbreak{}dirty(\allowbreak{})} (80), \texttt{\_\allowbreak{}save(\allowbreak{})} (84), \texttt{build(\allowbreak{})} (92).
+\item \textbf{Class} \texttt{\_\allowbreak{}LimitSlider} --- Line 170. Members: \texttt{build(\allowbreak{})} (196).
+\item \textbf{Class} \texttt{\_\allowbreak{}RiskBar} --- Line 249. Horizontal bar from the stop-loss (left) to the target (right), with a dot showing the position's current profit or loss. Members: \texttt{build(\allowbreak{})} (256).
+\end{itemize}
+\subsubsection*{frontend/lib/screens/liquidations\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{LiquidationsScreen} --- Line 20. Liquidation Intelligence: observed Binance futures liquidations with time windows, charts, spike detection, market context and a grounded AI explanation. Members: \texttt{createState(\allowbreak{})} (24).
+\item \textbf{Class} \texttt{\_\allowbreak{}LiquidationsScreenState} --- Line 41. Members: \texttt{\_\allowbreak{}symbol(\allowbreak{})} (53), \texttt{initState(\allowbreak{})} (56), \texttt{dispose(\allowbreak{})} (66), \texttt{\_\allowbreak{}load(\allowbreak{})} (71), \texttt{\_\allowbreak{}loadContext(\allowbreak{})} (90), \texttt{\_\allowbreak{}explain(\allowbreak{})} (106), \texttt{\_\allowbreak{}change(\allowbreak{})} (118), \texttt{build(\allowbreak{})} (129), \texttt{\_\allowbreak{}header(\allowbreak{})} (174), \texttt{\_\allowbreak{}tiles(\allowbreak{})} (223), \texttt{\_\allowbreak{}timelinePanel(\allowbreak{})} (262), \texttt{\_\allowbreak{}longShortPanel(\allowbreak{})} (323), \texttt{\_\allowbreak{}bySymbolPanel(\allowbreak{})} (371), \texttt{\_\allowbreak{}anomalyPanel(\allowbreak{})} (423), \texttt{\_\allowbreak{}contextPanel(\allowbreak{})} (477), \texttt{\_\allowbreak{}explainPanel(\allowbreak{})} (546), \texttt{\_\allowbreak{}largestPanel(\allowbreak{})} (601), \texttt{\_\allowbreak{}activityPanel(\allowbreak{})} (611), \texttt{\_\allowbreak{}bucketLabel(\allowbreak{})} (623), \texttt{\_\allowbreak{}grid(\allowbreak{})} (631), \texttt{\_\allowbreak{}titles(\allowbreak{})} (638).
+\item \textbf{Class} \texttt{\_\allowbreak{}Tile} --- Line 669. Members: \texttt{build(\allowbreak{})} (677).
+\item \textbf{Class} \texttt{\_\allowbreak{}EventRow} --- Line 692. Members: \texttt{build(\allowbreak{})} (698).
+\item Top-level \texttt{\_\allowbreak{}base(\allowbreak{})} --- Line 667.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/listings\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{ListingsScreen} --- Line 24. New listings: recently listed coins with a risk rating and a pre-buy checklist. Members: \texttt{build(\allowbreak{})} (28), \texttt{\_\allowbreak{}page(\allowbreak{})} (33).
+\item \textbf{Class} \texttt{\_\allowbreak{}ListingCard} --- Line 76. Members: \texttt{build(\allowbreak{})} (81).
+\item \textbf{Class} \texttt{\_\allowbreak{}Figure} --- Line 151. Members: \texttt{build(\allowbreak{})} (157).
+\item Top-level \texttt{\_\allowbreak{}checklistView(\allowbreak{})} --- Line 167.
+\item Top-level \texttt{\_\allowbreak{}showChecklist(\allowbreak{})} --- Line 190.
+\item Top-level \texttt{\_\allowbreak{}open(\allowbreak{})} --- Line 205.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/news\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{NewsScreen} --- Line 16. News feed with sentiment tags. Tap a story for Sage's take. Members: \texttt{createState(\allowbreak{})} (20).
+\item \textbf{Class} \texttt{\_\allowbreak{}NewsScreenState} --- Line 23. Members: \texttt{build(\allowbreak{})} (27), \texttt{\_\allowbreak{}page(\allowbreak{})} (32).
+\item \textbf{Class} \texttt{\_\allowbreak{}NewsCard} --- Line 69. Members: \texttt{build(\allowbreak{})} (74), \texttt{\_\allowbreak{}open(\allowbreak{})} (125).
+\end{itemize}
+\subsubsection*{frontend/lib/screens/paper\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{PaperScreen} --- Line 30. Paper trading: practice with 10,000 pretend dollars at real live prices. Members: \texttt{createState(\allowbreak{})} (34).
+\item \textbf{Class} \texttt{\_\allowbreak{}PaperScreenState} --- Line 37. Members: \texttt{dispose(\allowbreak{})} (52), \texttt{\_\allowbreak{}load(\allowbreak{})} (57), \texttt{\_\allowbreak{}order(\allowbreak{})} (81), \texttt{\_\allowbreak{}showWarning(\allowbreak{})} (122), \texttt{\_\allowbreak{}reset(\allowbreak{})} (148), \texttt{build(\allowbreak{})} (173), \texttt{\_\allowbreak{}message(\allowbreak{})} (180), \texttt{\_\allowbreak{}page(\allowbreak{})} (195), \texttt{\_\allowbreak{}tradePanel(\allowbreak{})} (322), \texttt{\_\allowbreak{}positionsPanel(\allowbreak{})} (443), \texttt{\_\allowbreak{}tradeRow(\allowbreak{})} (529).
+\item \textbf{Class} \texttt{\_\allowbreak{}Stat} --- Line 572. Members: \texttt{build(\allowbreak{})} (577).
+\item Top-level \texttt{\_\allowbreak{}levelColor(\allowbreak{})} --- Line 17.
+\item Top-level \texttt{\_\allowbreak{}levelWord(\allowbreak{})} --- Line 23.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/portfolio\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{PortfolioScreen} --- Line 17. Portfolio: total value, profit/loss, allocation ring and the holdings list. Members: \texttt{build(\allowbreak{})} (21).
+\item \textbf{Class} \texttt{\_\allowbreak{}Summary} --- Line 72. Members: \texttt{build(\allowbreak{})} (85).
+\item \textbf{Class} \texttt{\_\allowbreak{}HoldingRow} --- Line 205. Members: \texttt{build(\allowbreak{})} (211).
+\item \textbf{Class} \texttt{\_\allowbreak{}Empty} --- Line 340. Members: \texttt{build(\allowbreak{})} (345).
+\item \textbf{Class} \texttt{\_\allowbreak{}AddHoldingForm} --- Line 369. Members: \texttt{createState(\allowbreak{})} (373).
+\item \textbf{Class} \texttt{\_\allowbreak{}AddHoldingFormState} --- Line 376. Members: \texttt{didChangeDependencies(\allowbreak{})} (383), \texttt{\_\allowbreak{}setPrice(\allowbreak{})} (388), \texttt{dispose(\allowbreak{})} (395), \texttt{\_\allowbreak{}num(\allowbreak{})} (401), \texttt{\_\allowbreak{}save(\allowbreak{})} (403), \texttt{build(\allowbreak{})} (417).
+\item Top-level \texttt{showAddHolding(\allowbreak{})} --- Line 366.
+\end{itemize}
+\subsubsection*{frontend/lib/screens/shell.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Shell} --- Line 25. App frame: sidebar (or drawer on small screens) + top bar + current page. Also listens to prices and pops a notification when an alert or limit fires. Members: \texttt{createState(\allowbreak{})} (29).
+\item \textbf{Class} \texttt{\_\allowbreak{}ShellState} --- Line 32. Members: \texttt{initState(\allowbreak{})} (52), \texttt{dispose(\allowbreak{})} (68), \texttt{\_\allowbreak{}checkAlerts(\allowbreak{})} (74), \texttt{build(\allowbreak{})} (85).
+\end{itemize}
+\subsubsection*{frontend/lib/screens/whale\_screen.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{WhaleScreen} --- Line 19. Whale watch: large transfers, exchange inflow vs outflow, and what they mean. Members: \texttt{createState(\allowbreak{})} (23).
+\item \textbf{Class} \texttt{\_\allowbreak{}WhaleScreenState} --- Line 26. Members: \texttt{initState(\allowbreak{})} (33), \texttt{dispose(\allowbreak{})} (58), \texttt{build(\allowbreak{})} (64).
+\item \textbf{Class} \texttt{\_\allowbreak{}Chip} --- Line 320. Members: \texttt{build(\allowbreak{})} (325).
+\item \textbf{Class} \texttt{\_\allowbreak{}SmartMoneyRow} --- Line 335. Members: \texttt{build(\allowbreak{})} (340).
+\item \textbf{Class} \texttt{\_\allowbreak{}FlowFigure} --- Line 369. Members: \texttt{build(\allowbreak{})} (381).
+\item \textbf{Class} \texttt{\_\allowbreak{}WhaleRow} --- Line 403. Members: \texttt{build(\allowbreak{})} (409), \texttt{\_\allowbreak{}open(\allowbreak{})} (466).
+\item \textbf{Class} \texttt{\_\allowbreak{}End} --- Line 511. Members: \texttt{build(\allowbreak{})} (516).
+\end{itemize}
+\subsubsection*{frontend/lib/services/api\_service.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{ApiException} --- Line 12. Error message from the backend (e.g. "Wrong email or password."). Members: \texttt{toString(\allowbreak{})} (18).
+\item \textbf{Class} \texttt{ApiUser} --- Line 21.
+\item \textbf{Class} \texttt{ApiService} --- Line 35. The bridge between the Flutter app and the FastAPI backend. Every backend endpoint the app uses is one method here. Members: \texttt{\_\allowbreak{}send(\allowbreak{})} (48), \texttt{ping(\allowbreak{})} (76), \texttt{\_\allowbreak{}saveAuth(\allowbreak{})} (86), \texttt{login(\allowbreak{})} (93), \texttt{register(\allowbreak{})} (97), \texttt{restore(\allowbreak{})} (102), \texttt{logout(\allowbreak{})} (115), \texttt{\_\allowbreak{}d(\allowbreak{})} (122), \texttt{\_\allowbreak{}dn(\allowbreak{})} (123), \texttt{\_\allowbreak{}t(\allowbreak{})} (124), \texttt{\_\allowbreak{}trend(\allowbreak{})} (126), \texttt{signals(\allowbreak{})} (130), \texttt{risks(\allowbreak{})} (148), \texttt{riskCopilot(\allowbreak{})} (175), \texttt{simulateRisk(\allowbreak{})} (215), \texttt{\_\allowbreak{}flow(\allowbreak{})} (254), \texttt{\_\allowbreak{}liquidation(\allowbreak{})} (279), \texttt{\_\allowbreak{}totals(\allowbreak{})} (289), \texttt{liquidations(\allowbreak{})} (296), \texttt{\_\allowbreak{}liqQuery(\allowbreak{})} (317), \texttt{liquidationStats(\allowbreak{})} (323), \texttt{liquidationAnomalies(\allowbreak{})} (327), \texttt{liquidationContext(\allowbreak{})} (331), \texttt{liquidationExplain(\allowbreak{})} (336), \texttt{smartMoney(\allowbreak{})} (346), \texttt{listings(\allowbreak{})} (384), \texttt{\_\allowbreak{}holdings(\allowbreak{})} (402), \texttt{portfolio(\allowbreak{})} (413), \texttt{addHolding(\allowbreak{})} (416), \texttt{removeHolding(\allowbreak{})} (421), \texttt{setLimits(\allowbreak{})} (424), \texttt{\_\allowbreak{}alert(\allowbreak{})} (430), \texttt{alerts(\allowbreak{})} (439), \texttt{createAlert(\allowbreak{})} (442), \texttt{toggleAlert(\allowbreak{})} (447), \texttt{deleteAlert(\allowbreak{})} (450), \texttt{unseenNotifications(\allowbreak{})} (455), \texttt{markNotificationsSeen(\allowbreak{})} (462).
+\end{itemize}
+\subsubsection*{frontend/lib/services/app\_scope.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AppScope} --- Line 9. Makes the two shared services reachable from any widget: context.market  $\rightarrow$ live prices and candles context.app     $\rightarrow$ portfolio, alerts, chat, navigation Members: \texttt{of(\allowbreak{})} (20), \texttt{updateShouldNotify(\allowbreak{})} (27).
+\item \textbf{Extension} \texttt{ScopeX} --- Line 31. Members: \texttt{market(\allowbreak{})} (32), \texttt{app(\allowbreak{})} (33).
+\end{itemize}
+\subsubsection*{frontend/lib/services/app\_state.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AppState} --- Line 19. Everything the user creates or sees besides live prices. Backend running  $\rightarrow$ signals, news, whales and listings come from FastAPI; when logged in, portfolio, limits and alerts are saved in the databas Members: \texttt{Function(\allowbreak{})} (30), \texttt{loggedIn(\allowbreak{})} (35), \texttt{init(\allowbreak{})} (65), \texttt{checkBackend(\allowbreak{})} (81), \texttt{refreshAll(\allowbreak{})} (86), \texttt{refreshSignals(\allowbreak{})} (102), \texttt{refreshRisks(\allowbreak{})} (113), \texttt{refreshNews(\allowbreak{})} (124), \texttt{refreshWhales(\allowbreak{})} (136), \texttt{refreshLiquidations(\allowbreak{})} (147), \texttt{refreshSmartMoney(\allowbreak{})} (158), \texttt{refreshListings(\allowbreak{})} (167), \texttt{login(\allowbreak{})} (179), \texttt{register(\allowbreak{})} (185), \texttt{logout(\allowbreak{})} (191), \texttt{\_\allowbreak{}loadUserData(\allowbreak{})} (200), \texttt{\_\allowbreak{}sync(\allowbreak{})} (212), \texttt{\_\allowbreak{}setHoldings(\allowbreak{})} (221), \texttt{\_\allowbreak{}pollNotifications(\allowbreak{})} (227), \texttt{go(\allowbreak{})} (246), \texttt{finishTour(\allowbreak{})} (256), \texttt{holding(\allowbreak{})} (262), \texttt{portfolioValue(\allowbreak{})} (269), \texttt{portfolioCost(\allowbreak{})} (272), \texttt{addHolding(\allowbreak{})} (275), \texttt{removeHolding(\allowbreak{})} (291), \texttt{setLimits(\allowbreak{})} (298), \texttt{addAlert(\allowbreak{})} (311), \texttt{toggleAlert(\allowbreak{})} (329), \texttt{removeAlert(\allowbreak{})} (340), \texttt{evaluate(\allowbreak{})} (348), \texttt{completeLesson(\allowbreak{})} (395), \texttt{ask(\allowbreak{})} (403), \texttt{dispose(\allowbreak{})} (434).
+\end{itemize}
+\subsubsection*{frontend/lib/services/coins.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item Top-level \texttt{coinName(\allowbreak{})} --- Line 11.
+\end{itemize}
+\subsubsection*{frontend/lib/services/guide\_content.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{GuideContent} --- Line 9. All of Sage's teaching text in one place: - explainers: shown when a lightbulb button is tapped - lessons: the Academy learning path - tourSteps: the welcome tour on first launch
+\end{itemize}
+\subsubsection*{frontend/lib/services/indicators.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Indicators} --- Line 5. Technical indicators computed in the browser from candle closes. (The ML backend uses the same ideas with TA-Lib; these are for display.) Members: \texttt{rsi(\allowbreak{})} (9), \texttt{sma(\allowbreak{})} (26), \texttt{volatility(\allowbreak{})} (34), \texttt{volScale(\allowbreak{})} (48), \texttt{volWord(\allowbreak{})} (55).
+\end{itemize}
+\subsubsection*{frontend/lib/services/market\_service.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{MarketService} --- Line 18. Real-time market data. 1. Loads a real snapshot from Binance REST (24h tickers + recent hourly closes). 2. Streams live 24h tickers from Binance's public WebSocket (no API key needed). 3. If Binance c Members: \texttt{ticker(\allowbreak{})} (39), \texttt{hasPrices(\allowbreak{})} (42), \texttt{start(\allowbreak{})} (44), \texttt{\_\allowbreak{}loadSnapshot(\allowbreak{})} (50), \texttt{\_\allowbreak{}recentCloses(\allowbreak{})} (83), \texttt{\_\allowbreak{}connectLive(\allowbreak{})} (99), \texttt{\_\allowbreak{}onMessage(\allowbreak{})} (122), \texttt{\_\allowbreak{}queueNotify(\allowbreak{})} (157), \texttt{\_\allowbreak{}offline(\allowbreak{})} (168), \texttt{candles(\allowbreak{})} (187), \texttt{mood(\allowbreak{})} (213), \texttt{moodLabel(\allowbreak{})} (220), \texttt{dispose(\allowbreak{})} (231).
+\end{itemize}
+\subsubsection*{frontend/lib/services/paper\_service.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{PaperPosition} --- Line 11. One open practice position (coins you "hold" in the paper wallet). Members: \texttt{base(\allowbreak{})} (24).
+\item \textbf{Class} \texttt{PaperTradeRow} --- Line 35. One practice buy or sell, saved with the AI risk score at that moment. Members: \texttt{base(\allowbreak{})} (60), \texttt{isBuy(\allowbreak{})} (61).
+\item \textbf{Class} \texttt{PaperAccount} --- Line 79. The practice account: cash, open positions and simple statistics. Members: \texttt{positionOf(\allowbreak{})} (94).
+\item \textbf{Class} \texttt{PaperTradeResult} --- Line 113.
+\item \textbf{Class} \texttt{PaperService} --- Line 123. Talks to the backend's /api/paper endpoints, reusing the login token of [ApiService]. Members: \texttt{\_\allowbreak{}send(\allowbreak{})} (128), \texttt{account(\allowbreak{})} (152), \texttt{trades(\allowbreak{})} (155), \texttt{trade(\allowbreak{})} (162), \texttt{reset(\allowbreak{})} (181).
+\item Top-level \texttt{\_\allowbreak{}pd(\allowbreak{})} --- Line 7.
+\item Top-level \texttt{\_\allowbreak{}pdn(\allowbreak{})} --- Line 8.
+\end{itemize}
+\subsubsection*{frontend/lib/services/sage\_brain.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{SageBrain} --- Line 11. Sage is the human-like guide of CryptoSense. Offline fallback: when the backend chat can't be reached, Sage answers with rules + live numbers from [MarketService] (never made-up figures). Members: \texttt{marketRead(\allowbreak{})} (31), \texttt{reply(\allowbreak{})} (79), \texttt{\_\allowbreak{}coin(\allowbreak{})} (219), \texttt{\_\allowbreak{}portfolio(\allowbreak{})} (233).
+\end{itemize}
+\subsubsection*{frontend/lib/theme/app\_colors.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AppColors} --- Line 5. The CryptoSense palette: deep plum "night trading desk" with a brass accent. Bull (mint) and bear (coral) are reserved for price direction only.
+\item \textbf{Extension} \texttt{Fade} --- Line 26. Members: \texttt{fade(\allowbreak{})} (28).
+\end{itemize}
+\subsubsection*{frontend/lib/theme/app\_theme.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AppText} --- Line 9. Three text roles used everywhere: display = Sora (headings, Sage's market read), body = DM Sans, number = DM Sans with tabular figures so prices don't jiggle as they update. Members: \texttt{display(\allowbreak{})} (12), \texttt{body(\allowbreak{})} (21), \texttt{number(\allowbreak{})} (28).
+\item \textbf{Class} \texttt{AppTheme} --- Line 39. Members: \texttt{dark(\allowbreak{})} (42).
+\end{itemize}
+\subsubsection*{frontend/lib/utils/format.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Fmt} --- Line 4. Small helpers that turn numbers and dates into friendly text. Members: \texttt{usd(\allowbreak{})} (11), \texttt{compact(\allowbreak{})} (19), \texttt{pct(\allowbreak{})} (22), \texttt{coin(\allowbreak{})} (25), \texttt{ago(\allowbreak{})} (31), \texttt{clock(\allowbreak{})} (39).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/account.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{AccountButton} --- Line 13. Top-bar button: "Backend offline" / "Sign in" / the logged-in user's name. Members: \texttt{build(\allowbreak{})} (17), \texttt{\_\allowbreak{}showAccount(\allowbreak{})} (94).
+\item \textbf{Class} \texttt{\_\allowbreak{}AuthForm} --- Line 132. Members: \texttt{createState(\allowbreak{})} (136).
+\item \textbf{Class} \texttt{\_\allowbreak{}AuthFormState} --- Line 139. Members: \texttt{dispose(\allowbreak{})} (148), \texttt{\_\allowbreak{}submit(\allowbreak{})} (155), \texttt{build(\allowbreak{})} (193).
+\item Top-level \texttt{showAuth(\allowbreak{})} --- Line 129.
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/bits.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{TrendBadge} --- Line 24. Members: \texttt{build(\allowbreak{})} (29).
+\item \textbf{Class} \texttt{ChangeText} --- Line 51. Members: \texttt{build(\allowbreak{})} (57).
+\item \textbf{Class} \texttt{CoinAvatar} --- Line 64. Members: \texttt{colorFor(\allowbreak{})} (79), \texttt{build(\allowbreak{})} (85).
+\item \textbf{Class} \texttt{Tag} --- Line 104. Members: \texttt{build(\allowbreak{})} (110).
+\item \textbf{Class} \texttt{RiskMeter} --- Line 122. Three bars: lower / medium / high risk. Members: \texttt{label(\allowbreak{})} (126), \texttt{color(\allowbreak{})} (128), \texttt{build(\allowbreak{})} (132).
+\item \textbf{Class} \texttt{DemoNote} --- Line 159. Quiet note that tells the examiner/user which data is still simulated. Members: \texttt{build(\allowbreak{})} (164).
+\item \textbf{Class} \texttt{FieldLabel} --- Line 180. Members: \texttt{build(\allowbreak{})} (185).
+\item \textbf{Class} \texttt{CoinChoice} --- Line 194. Pick one of the tracked coins. Optionally shows each coin's 24h change. Members: \texttt{build(\allowbreak{})} (205).
+\item Top-level \texttt{trendColor(\allowbreak{})} --- Line 12. Small reusable pieces: trend badge, \% change, coin avatar, tags, notes.
+\item Top-level \texttt{trendIcon(\allowbreak{})} --- Line 18.
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/buttons.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Enum} \texttt{ButtonKind} --- Line 7.
+\item \textbf{Class} \texttt{AppButton} --- Line 10. Brass-filled primary button or outlined ghost button. Members: \texttt{build(\allowbreak{})} (29).
+\item \textbf{Class} \texttt{SegmentPills} --- Line 72. Segmented selector (timeframes, filters). Scrolls sideways on small screens. Members: \texttt{build(\allowbreak{})} (87).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/candle\_chart.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{CandleChart} --- Line 18. Interactive candlestick chart with volume bars and a live-price line. Hover (desktop) or drag (touch) to read any candle. Members: \texttt{createState(\allowbreak{})} (24).
+\item \textbf{Class} \texttt{\_\allowbreak{}CandleChartState} --- Line 27. Members: \texttt{\_\allowbreak{}track(\allowbreak{})} (30), \texttt{\_\allowbreak{}clear(\allowbreak{})} (38), \texttt{build(\allowbreak{})} (43), \texttt{\_\allowbreak{}ohlc(\allowbreak{})} (92).
+\item \textbf{Class} \texttt{CandlePainter} --- Line 99. Members: \texttt{paint(\allowbreak{})} (107), \texttt{\_\allowbreak{}label(\allowbreak{})} (203), \texttt{shouldRepaint(\allowbreak{})} (217).
+\item Top-level \texttt{chartPrice(\allowbreak{})} --- Line 10.
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/explain.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{SageAvatar} --- Line 11. Sage's avatar: a brass-to-orchid coin with a spark. Members: \texttt{build(\allowbreak{})} (16).
+\item \textbf{Class} \texttt{ExplainButton} --- Line 33. The lightbulb button. Tapping it opens Sage's explanation of [topic]. Members: \texttt{build(\allowbreak{})} (38).
+\item \textbf{Class} \texttt{TipBox} --- Line 93. Highlighted "tip" box used in popups and lessons. Members: \texttt{build(\allowbreak{})} (100).
+\item Top-level \texttt{showExplainer(\allowbreak{})} --- Line 63.
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/mini\_charts.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Sparkline} --- Line 9. Tiny price line used in the watchlist. Members: \texttt{build(\allowbreak{})} (16).
+\item \textbf{Class} \texttt{\_\allowbreak{}SparkPainter} --- Line 23. Members: \texttt{paint(\allowbreak{})} (28), \texttt{shouldRepaint(\allowbreak{})} (65).
+\item \textbf{Class} \texttt{DonutSlice} --- Line 68.
+\item \textbf{Class} \texttt{DonutChart} --- Line 75. Allocation ring for the portfolio. Members: \texttt{build(\allowbreak{})} (87).
+\item \textbf{Class} \texttt{\_\allowbreak{}DonutPainter} --- Line 101. Members: \texttt{paint(\allowbreak{})} (107), \texttt{shouldRepaint(\allowbreak{})} (136).
+\item \textbf{Class} \texttt{MoodGauge} --- Line 140. Half-circle gauge for the market mood score (0..100). Members: \texttt{build(\allowbreak{})} (148).
+\item \textbf{Class} \texttt{\_\allowbreak{}GaugePainter} --- Line 180. Members: \texttt{paint(\allowbreak{})} (185), \texttt{shouldRepaint(\allowbreak{})} (229).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/panel.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{Panel} --- Line 8. Standard content panel with an optional heading, action and lightbulb. Members: \texttt{build(\allowbreak{})} (27).
+\item \textbf{Class} \texttt{PageBody} --- Line 95. Scrollable page wrapper with responsive padding and a max width. Members: \texttt{build(\allowbreak{})} (101).
+\item \textbf{Class} \texttt{TwoColumn} --- Line 124. Two columns on wide screens (2:1 by default), stacked on narrow ones. Members: \texttt{build(\allowbreak{})} (139).
+\item \textbf{Class} \texttt{TileGrid} --- Line 160. Lays children out in a responsive grid of equal-width tiles. Members: \texttt{build(\allowbreak{})} (171).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/pop.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{PopCard} --- Line 48. The card inside every popup: icon, title, close button, scrollable body, actions. Members: \texttt{build(\allowbreak{})} (69).
+\item Top-level \texttt{confirmPop(\allowbreak{})} --- Line 153. Yes/no popup. Returns true when the user confirms.
+\item Top-level \texttt{toast(\allowbreak{})} --- Line 188. Small floating notification ("Alert created", "Limits saved", price alerts).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/sidebar.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{NavEntry} --- Line 11. One page in the app. The index in [navEntries] is the page number.
+\item \textbf{Class} \texttt{Sidebar} --- Line 55. Left navigation. On phones it lives inside the Drawer. Members: \texttt{build(\allowbreak{})} (60).
+\item \textbf{Class} \texttt{\_\allowbreak{}Logo} --- Line 116. Members: \texttt{build(\allowbreak{})} (120).
+\item \textbf{Class} \texttt{\_\allowbreak{}NavItem} --- Line 151. Members: \texttt{build(\allowbreak{})} (163).
+\item \textbf{Class} \texttt{\_\allowbreak{}SageCard} --- Line 218. Members: \texttt{build(\allowbreak{})} (223).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/tappable.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{TapState} --- Line 4. Hover / keyboard-focus / pressed state passed to a [Tappable] builder.
+\item \textbf{Class} \texttt{Tappable} --- Line 12. The one interactive primitive used by every custom button, row and chip. Gives mouse hover, keyboard focus (Tab + Enter/Space), a soft press-in scale, and respects the system "reduce motion" setting. Members: \texttt{Function(\allowbreak{})} (21), \texttt{createState(\allowbreak{})} (27).
+\item \textbf{Class} \texttt{\_\allowbreak{}TappableState} --- Line 30. Members: \texttt{\_\allowbreak{}set(\allowbreak{})} (33), \texttt{build(\allowbreak{})} (38).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/top\_bar.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{TopBar} --- Line 15. Page title, BTC/ETH price chips, live/offline status, clock and tour button. Members: \texttt{build(\allowbreak{})} (26).
+\item \textbf{Class} \texttt{\_\allowbreak{}TickerChip} --- Line 91. Members: \texttt{build(\allowbreak{})} (96).
+\item \textbf{Class} \texttt{\_\allowbreak{}LiveBadge} --- Line 118. Members: \texttt{createState(\allowbreak{})} (123).
+\item \textbf{Class} \texttt{\_\allowbreak{}LiveBadgeState} --- Line 126. Members: \texttt{dispose(\allowbreak{})} (133), \texttt{build(\allowbreak{})} (139).
+\item \textbf{Class} \texttt{\_\allowbreak{}Clock} --- Line 176. Members: \texttt{createState(\allowbreak{})} (180).
+\item \textbf{Class} \texttt{\_\allowbreak{}ClockState} --- Line 183. Members: \texttt{initState(\allowbreak{})} (188), \texttt{dispose(\allowbreak{})} (195), \texttt{build(\allowbreak{})} (201).
+\end{itemize}
+\subsubsection*{frontend/lib/widgets/tour.dart}
+\begin{itemize}[nosep,leftmargin=1.5em]
+\item \textbf{Class} \texttt{\_\allowbreak{}Tour} --- Line 19. Members: \texttt{createState(\allowbreak{})} (23).
+\item \textbf{Class} \texttt{\_\allowbreak{}TourState} --- Line 26. Members: \texttt{build(\allowbreak{})} (30).
+\item Top-level \texttt{showTour(\allowbreak{})} --- Line 13. Welcome tour: four short steps where Sage introduces the app. Opens automatically on first launch and from the "?" button in the top bar.
+\end{itemize}
+\subsection{Dart Inventory Summary}
+The source index reports 171 classes, enums and extensions and 358 detected members and top-level functions across 39 Dart files. Some expression-bodied declarations may not be detected by this lightweight index; the original source remains authoritative.

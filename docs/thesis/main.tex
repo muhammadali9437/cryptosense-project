@@ -1,0 +1,139 @@
+% =====================================================================
+%  CryptoSense AI - Final Year Project Documentation
+%  COMSATS University Islamabad, Attock Campus - BS Computer Science
+%  Compile with pdfLaTeX (Overleaf: Menu -> Compiler -> pdfLaTeX), run twice
+%  so the table of contents and lists are filled in.
+% =====================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ---------------------------------------------------------------- packages
+\usepackage[a4paper,top=1in,bottom=1in,left=1.5in,right=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}          % Times New Roman style text and maths
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array,tabularx,longtable,booktabs,multirow}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\onehalfspacing
+\graphicspath{{figures/}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% ------------------------------------------------- project details (EDIT)
+\newcommand{\projecttitle}{CryptoSense AI: An Explainable AI-Based\\ Cryptocurrency Market Risk Intelligence Platform}
+\newcommand{\projecttitleinline}{CryptoSense AI: An Explainable AI-Based Cryptocurrency Market Risk Intelligence Platform}
+\newcommand{\studentA}{Student Name 1}
+\newcommand{\regA}{CIIT/SPxx-BCS-xxx/ATK}
+\newcommand{\studentB}{Student Name 2}
+\newcommand{\regB}{CIIT/SPxx-BCS-xxx/ATK}
+\newcommand{\supervisor}{Supervisor Name}
+\newcommand{\supervisordesignation}{Lecturer}
+\newcommand{\hod}{Head of Department Name}
+\newcommand{\hoddesignation}{Associate Professor}
+\newcommand{\examiner}{External Examiner Name}
+\newcommand{\examinerorg}{Examiner's Institution}
+\newcommand{\session}{FALL, 2026}
+\newcommand{\submissionmonth}{December, 2026}
+\newcommand{\university}{COMSATS University Islamabad}
+\newcommand{\campus}{Attock Campus}
+
+% ------------------------------------------------------ captions and lists
+\captionsetup{labelsep=space,font=normalsize,justification=centering}
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Table}
+\renewcommand{\cftfigpresnum}{Fig }
+\renewcommand{\cfttabpresnum}{Table }
+\setlength{\cftfignumwidth}{4.5em}
+\setlength{\cfttabnumwidth}{5.5em}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\contentsname}{TABLE OF CONTENTS}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\renewcommand{\listtablename}{LIST OF TABLES}
+\renewcommand{\cfttoctitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftafterloftitle}{\hfill}
+\renewcommand{\cftlottitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftafterlottitle}{\hfill}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
+% ------------------------------------------------------- heading styles
+% Chapter: a page of its own with "Chapter N" and the title centred (as in the template).
+\titleformat{\chapter}[display]{\centering\normalfont\bfseries\LARGE}{\chaptertitlename\ \thechapter}{18pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{0.36\textheight}{0pt}  % pushes the chapter title to the middle of its page
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{0.8em}{}
+
+% \chapter already starts a new page; the title page is then closed so the chapter text starts on the next page.
+\newcommand{\fypchapter}[2]{\chapter{#1}\label{#2}\thispagestyle{empty}\clearpage}
+\newcommand{\chapteroverview}{\begin{center}{\LARGE\bfseries Chapter Overview}\end{center}\vspace{4pt}}
+
+% ---------------------------------------------------------- helpers
+% \diagram{file in figures/}{caption}{label}{width}: shows the image if it exists, otherwise a placeholder box.
+\newcommand{\diagram}[4]{%
+  \begin{figure}[H]\centering
+  \IfFileExists{figures/#1}{\includegraphics[width=#4,keepaspectratio,height=0.78\textheight]{#1}}{%
+    \fbox{\parbox[c][5cm][c]{0.8\linewidth}{\centering Add figure: \texttt{figures/\detokenize{#1}}}}}
+  \caption{#2}\label{#3}\end{figure}}
+
+% Functional requirement table in the template's layout.
+% \frtable{caption}{label}{id}{title}{user perspective}{system perspective}{source}{rationale}{business rule}{dependencies}{priority}
+\newcommand{\frtable}[11]{%
+  \begin{table}[H]\centering\caption{#1}\label{#2}
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabularx}{\linewidth}{|p{0.27\linewidth}|X|}\hline
+  \textbf{Identifier} & #3 \\\hline
+  \textbf{Title} & #4 \\\hline
+  \textbf{Requirement} & \textbf{User Perspective:} #5\par\textbf{System Perspective:} #6 \\\hline
+  \textbf{Source} & #7 \\\hline
+  \textbf{Rationale} & #8 \\\hline
+  \textbf{Business Rule (if required)} & #9 \\\hline
+  \textbf{Dependencies} & #10 \\\hline
+  \textbf{Priority} & #11 \\\hline
+  \end{tabularx}\end{table}}
+
+% Test case block in the template's style.
+\newcommand{\testcase}[5]{%
+  \textbf{#1}\par
+  \textit{Testing Objective:} #2\par
+  \textit{Expected Result:} #3\par
+  \textit{Actual Result:} #4\par
+  \textit{Status:} #5\par\medskip}
+
+\begin{document}
+
+% ======================================================= front matter
+\pagenumbering{roman}
+\input{frontmatter}
+
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+% ======================================================= chapters
+\pagenumbering{arabic}
+\input{chapters/chapter1}
+\input{chapters/chapter2}
+\input{chapters/chapter3}
+\input{chapters/chapter4}
+\input{chapters/chapter5}
+\input{chapters/chapter6}
+
+% ======================================================= references
+\input{references}
+
+\end{document}

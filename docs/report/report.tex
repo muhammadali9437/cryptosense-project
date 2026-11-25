@@ -1,0 +1,116 @@
+% =====================================================================
+%  CryptoSense AI - Project Report (short technical report)
+%  Compile with pdfLaTeX. Figures are shared with the thesis (../thesis/figures).
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{graphicx,float,booktabs,tabularx,array,enumitem,caption,amsmath,url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\setstretch{1.15}
+\graphicspath{{../thesis/figures/}}
+\setlength{\parskip}{5pt}
+\captionsetup{labelsep=period,font=small}
+
+% ------------------------------------------- project details (EDIT)
+\newcommand{\studentA}{Muhammad Ali}
+\newcommand{\studentB}{Ilyas Hussain}
+\newcommand{\supervisor}{Mr. Sohail Akhtar}
+
+\newcommand{\fig}[4]{\begin{figure}[H]\centering
+  \IfFileExists{../thesis/figures/#1}{\includegraphics[width=#4]{#1}}{\fbox{\parbox[c][4cm][c]{0.8\linewidth}{\centering Add figure: \texttt{\detokenize{#1}}}}}
+  \caption{#2}\label{#3}\end{figure}}
+
+\title{\textbf{CryptoSense AI: An Explainable AI-Based Cryptocurrency Market Risk Intelligence Platform}\\[6pt]\large Project Report}
+\author{\studentA\\ \studentB\\[4pt] Supervisor: \supervisor\\ Co-supervisor: Ma'am Syeda Seerat Zahra Naqvi\\[4pt] Department of Data Science, University of Kotli, Azad Jammu and Kashmir}
+\date{December 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Retail cryptocurrency users make decisions with fragmented and hard-to-read information about market risk. CryptoSense AI is a web platform that combines live Binance market data, derivatives and liquidation data, news sentiment and whale activity with machine learning, and explains the result in plain language. An XGBoost and LightGBM ensemble classifies the next 24 hours of six major coins, a transparent seven-factor score explains risk, and a conversational copilot coordinates six specialist analysts while a verification step rejects any AI-written number that is not found in the computed data. A Liquidation Intelligence module records observed liquidations, detects unusual activity with robust statistics and relates it to price, open interest and funding. The system applies a strict no-fabricated-data policy and is verified by 65 automated tests and live end-to-end checks. On unseen recent data, the models provide a weak but measurable signal (ROC-AUC 0.61--0.64 for falls), which improves with longer history, volatility features and calibration; downside risk proved more predictable than direction (ROC-AUC 0.69).
+\end{abstract}
+
+\section{Introduction}
+Prices of cryptocurrencies are easy to find, but the information that describes risk (volatility, leverage, forced liquidations, sentiment and large transfers) is spread across specialist platforms, is presented for experts and is often paid. Predictions shown by many tools are not evaluated honestly, and language-model chatbots may invent figures. CryptoSense AI addresses these problems with a single explainable platform. Its objectives are to (1) stream live market data without ever fabricating values, (2) train and honestly evaluate machine learning signals, (3) explain risk transparently, (4) provide a grounded conversational assistant, (5) analyse liquidations, and (6) give users tools to manage risk: portfolio limits, alerts and paper trading.
+
+\section{System Overview}
+The system consists of a Flutter web client and a Python FastAPI backend (Figure~\ref{fig:arch}). The client renders eleven screens and receives live prices directly from Binance. The backend exposes 47 REST endpoints and runs background workers for alerts, news, listings and the liquidation stream. Data is stored with SQLAlchemy in SQLite locally or PostgreSQL on Railway.
+
+\fig{diagrams/01_system_architecture.png}{Layered architecture of CryptoSense AI.}{fig:arch}{\linewidth}
+
+The main features are: live market monitoring and charts; AI market signals; an explainable risk score with a Risk Copilot (model votes, similar historical periods, observed key levels and a volatility what-if); the Sage copilot with six specialists; Liquidation Intelligence; news sentiment; whale and smart-money tracking; new listings; portfolio and profit/loss limits; alerts with Telegram delivery; paper trading; and an Academy.
+
+\section{Methodology}
+\subsection{Machine Learning Signals}
+Hourly candles for BTC, ETH, BNB, SOL, XRP and ADA are combined with futures funding, the Fear and Greed index and Bitcoin's trend into 18 features: returns, RSI, MACD, Bollinger position and width, ATR, distance from moving averages, volume ratio, taker-buy ratio, funding, Fear and Greed and its change, and Bitcoin's return and trend. Training uses only hours where funding and the Fear and Greed index were really observed. The label is the price 24 hours later: above $+2.5\%$ bullish, below $-2.5\%$ bearish, otherwise neutral. Each coin's data is split chronologically (70/15/15) with 24-hour gaps. XGBoost \cite{chen2016xgboost} and LightGBM \cite{ke2017lightgbm} are trained with class balancing and early stopping, and their probabilities are averaged with weights equal to validation macro-F1. Directional calls whose top score is below 0.55 are shown as neutral. Figure~\ref{fig:ml} summarises the pipeline.
+
+\fig{diagrams/11_ml_pipeline.png}{Training pipeline of the machine learning signals.}{fig:ml}{\linewidth}
+
+\subsection{Explainable Risk Score}
+The risk score adds seven factors with fixed maximum points: price swings (ATR, 30), trend (15), the AI model's bearish score (15), momentum stretch (RSI, 10), crowded trades (funding, 10), market mood (Fear and Greed, 10) and Bitcoin's trend (10). Scores below 35 are low, 35--59 moderate and 60 or more high. The largest factor is explained to the user, and the model's bearish output is labelled as a raw score because it is not yet calibrated.
+
+\subsection{Grounded Conversational Copilot}
+For each question the backend gathers live context and runs six specialist analysts (market, derivatives, on-chain, sentiment and news, risk, explanation). Sage retrieves relevant knowledge with TF-IDF search and generates a cited answer with Claude, an OpenAI-compatible model or rules. For analytics explanations, every number in the model's text must match a number in the computed facts; otherwise the deterministic answer is used.
+
+\subsection{Liquidation Intelligence}
+The Binance all-market forceOrder stream pushes at most one liquidation per symbol per second, so all figures are labelled as observed samples. Forced SELL orders are counted as long liquidations and forced BUY orders as short liquidations; USD value is filled quantity times average price. Events are de-duplicated and stored for seven days, and statistics are computed for 5m, 15m, 1h, 4h and 24h windows with SQL aggregation. Spikes are detected with a robust z-score against a rolling baseline of five-minute buckets,
+\begin{equation}
+z = \frac{x-\mathrm{median}(B)}{\max\left(1.4826\,\mathrm{MAD}(B),\ m/4\right)},
+\end{equation}
+requiring $z\ge 4$ and $x\ge m$ (\$250{,}000 by default). The market context relates activity to price change, open interest, funding and ATR, and lists possible scenarios with supporting and contradicting evidence.
+
+\section{Implementation}
+The backend uses Python 3.11, FastAPI, SQLAlchemy 2, XGBoost, LightGBM, scikit-learn, pandas, vaderSentiment, websockets, bcrypt, PyJWT and the Anthropic SDK. The frontend uses Flutter 3.35 with fl\_chart for charts. Passwords are hashed with bcrypt and personal endpoints require JSON Web Tokens; API keys are read from environment variables. Figure~\ref{fig:screen} shows the Liquidation Intelligence screen of the running system.
+
+\fig{screens/liquidations.png}{Liquidation Intelligence screen with live data.}{fig:screen}{0.95\linewidth}
+
+\section{Testing}
+The backend test suite contains 65 unit and integration tests that cover parsing and classification of liquidations, invalid and duplicate data, window statistics, spike detection, stream reconnection, alert cooldowns, number verification of AI answers, the language-model fallback chain, the six specialists and the no-fabricated-data rules. All 65 tests passed. The frontend passed static analysis without errors and compiled to the web. In a live run, all 19 public GET endpoints returned HTTP 200, the liquidation stream received 94 messages with no invalid or duplicate events, and the copilot answered a risk question with six specialist reports in about 2.4 seconds.
+
+\section{Evaluation}
+Table~\ref{tab:history} compares models trained on two, five and ten years of requested history on the same final 100 unseen days (14{,}256 rows). Table~\ref{tab:exp} shows an experiment on the most recent unseen year (53{,}574 rows) with additional volatility features, calibration and a downside-touch target.
+
+\begin{table}[H]\centering\small
+\caption{Comparison on the same unseen 100 days.}\label{tab:history}
+\begin{tabular}{lccccc}\toprule
+History & Accuracy & Macro-F1 & Log loss & Fall Brier & Fall AUC\\\midrule
+2 years (deployed) & 0.518 & 0.395 & 0.987 & 0.160 & 0.573\\
+5 years & 0.564 & 0.407 & 0.973 & 0.160 & 0.613\\
+10 years requested & 0.597 & 0.407 & 0.924 & 0.152 & 0.608\\
+Always ``neutral'' & 0.687 & -- & -- & -- & --\\\bottomrule
+\end{tabular}\end{table}
+
+\begin{table}[H]\centering\small
+\caption{Calibration and downside-risk experiment on the unseen year.}\label{tab:exp}
+\begin{tabular}{lcccc}\toprule
+Model & Accuracy & Log loss & Brier & AUC\\\midrule
+\multicolumn{5}{l}{\textit{Direction (bearish class for Brier and AUC)}}\\
+Baseline (class frequencies) & 0.689 & 0.867 & 0.146 & 0.500\\
+LightGBM + volatility features, calibrated & 0.689 & 0.796 & 0.140 & 0.643\\
+\multicolumn{5}{l}{\textit{Touch of $-2.5\%$ within 24 hours (base rate 0.354)}}\\
+Baseline (base rate) & 0.646 & 0.671 & 0.239 & 0.500\\
+Logistic regression on ATR only & 0.662 & 0.620 & 0.215 & 0.670\\
+LightGBM + volatility features & 0.668 & 0.598 & 0.207 & 0.689\\\bottomrule
+\end{tabular}\end{table}
+
+The models trade plain accuracy for the ability to recognise the rarer bullish and bearish periods, so their accuracy is below that of always predicting ``neutral'', while their macro-F1, log loss and fall discrimination are better. Longer history, volatility features and calibration help, and downside risk is more predictable than direction, mainly because volatility is persistent. Much higher scores for 24-hour direction are not achievable from public data without leakage, consistent with the efficient market hypothesis \cite{fama1970}.
+
+\section{Limitations and Future Work}
+The models offer a weak signal and are not calibrated in production; risk-score boundaries are not yet validated; liquidation data is a sample from one exchange; and several feeds require optional keys. Future work includes calibrated downside-risk models for several horizons validated on out-of-sample data \cite{niculescu2005,brier1950}, new information sources (options-implied volatility, recorded open interest and liquidation history), a support and resistance engine, market regime and anomaly detection, native Bitcoin and Ethereum whale tracking, a main orchestrator with monitoring, live forward testing of predictions, and mobile builds.
+
+\section{Conclusion}
+CryptoSense AI provides a live, explainable and honest view of cryptocurrency market risk. It combines machine learning, transparent scoring, liquidation analytics and a grounded copilot, and it consistently refuses to present missing or unverified data as fact. The evaluation shows both the value and the limits of public-data prediction, and points to clear next steps.
+
+\begin{thebibliography}{9}
+\bibitem{chen2016xgboost} T. Chen and C. Guestrin, ``XGBoost: A scalable tree boosting system,'' in \textit{Proc. 22nd ACM SIGKDD}, 2016, pp. 785--794.
+\bibitem{ke2017lightgbm} G. Ke \textit{et al.}, ``LightGBM: A highly efficient gradient boosting decision tree,'' in \textit{Advances in Neural Information Processing Systems 30}, 2017, pp. 3146--3154.
+\bibitem{fama1970} E. F. Fama, ``Efficient capital markets: A review of theory and empirical work,'' \textit{The Journal of Finance}, vol. 25, no. 2, pp. 383--417, 1970.
+\bibitem{niculescu2005} A. Niculescu-Mizil and R. Caruana, ``Predicting good probabilities with supervised learning,'' in \textit{Proc. 22nd ICML}, 2005, pp. 625--632.
+\bibitem{brier1950} G. W. Brier, ``Verification of forecasts expressed in terms of probability,'' \textit{Monthly Weather Review}, vol. 78, no. 1, pp. 1--3, 1950.
+\end{thebibliography}
+
+\end{document}

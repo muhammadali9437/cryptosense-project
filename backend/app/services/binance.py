@@ -72,6 +72,21 @@ async def funding_rates(symbol: str, limit: int = 100) -> list[dict]:
     return r.json()
 
 
+async def futures_klines(symbol: str, interval: str = "5m", limit: int = 100) -> list[list]:
+    """USD-M futures candles (same column layout as spot klines)."""
+    r = await futures_client().get("/fapi/v1/klines", params={"symbol": symbol, "interval": interval, "limit": limit})
+    r.raise_for_status()
+    return r.json()
+
+
+async def open_interest_hist(symbol: str, period: str = "5m", limit: int = 60) -> list[dict]:
+    """Open-interest history (public; Binance keeps about 30 days). Oldest first."""
+    r = await futures_client().get("/futures/data/openInterestHist",
+                                   params={"symbol": symbol, "period": period, "limit": limit})
+    r.raise_for_status()
+    return r.json()
+
+
 async def open_interest(symbol: str) -> float:
     """Current open interest (number of open futures contracts). History is only 30 days, so live only."""
     r = await futures_client().get("/fapi/v1/openInterest", params={"symbol": symbol})

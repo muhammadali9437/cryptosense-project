@@ -73,20 +73,24 @@ class _AlertRow extends StatelessWidget {
       AlertKind.below => Icons.trending_down_rounded,
       AlertKind.move => Icons.swap_vert_rounded,
       AlertKind.risk => Icons.shield_outlined,
+      _ => Icons.local_fire_department_rounded,
     };
     final color = switch (alert.kind) {
       AlertKind.above => AppColors.bull,
       AlertKind.below => AppColors.bear,
       AlertKind.move => AppColors.calm,
       AlertKind.risk => AppColors.warn,
+      _ => AppColors.bear,
     };
     final risk = context.app.risks[alert.symbol]?.riskPct;
     final status = alert.triggeredAt != null
         ? 'Triggered ${Fmt.ago(alert.triggeredAt!)}'
         : alert.active
-            ? alert.kind == AlertKind.risk
-                ? 'Watching. Current risk: ${risk == null ? '...' : '${risk.round()}%'}'
-                : 'Watching. ${alert.base} is ${price == null ? '...' : Fmt.usd(price)} now'
+            ? alert.kind.isLiquidation
+                ? 'Watching observed Binance liquidations (repeats after a cooldown)'
+                : alert.kind == AlertKind.risk
+                    ? 'Watching. Current risk: ${risk == null ? '...' : '${risk.round()}%'}'
+                    : 'Watching. ${alert.base} is ${price == null ? '...' : Fmt.usd(price)} now'
             : 'Paused';
 
     return Container(
@@ -199,7 +203,15 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
     'below': 'Falls below',
     'move': 'Moves a lot',
     'risk': 'Risk reaches',
+    'liqLarge': 'Big liquidation',
+    'liqSpike': 'Liquidation spike',
+    'liqLong': 'Long liq. spike',
+    'liqShort': 'Short liq. spike',
+    'liqImbal': 'Liq. imbalance',
   };
+
+  static bool _isPercent(AlertKind k) =>
+      k == AlertKind.move || k == AlertKind.risk || k == AlertKind.liqImbal;
 
   @override
   void didChangeDependencies() {
@@ -209,14 +221,21 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
 
   /// Pre-fill a sensible value: +5% / -5% of the current price, or a 5% move.
   void _suggest() {
-    final p = context.market.ticker(_symbol).price;
+    final p = context.market.ticker(_symbol)?.price;
+    if (p == null && (_kind == AlertKind.above || _kind == AlertKind.below)) {
+      _value.text = ''; // no live price to suggest from
+      return;
+    }
     final v = switch (_kind) {
-      AlertKind.above => p * 1.05,
-      AlertKind.below => p * 0.95,
+      AlertKind.above => p! * 1.05,
+      AlertKind.below => p! * 0.95,
       AlertKind.move => 5.0,
       AlertKind.risk => 60.0,
+      AlertKind.liqLarge => 1000000.0,
+      AlertKind.liqImbal => 35.0,
+      _ => 4.0, // spike sensitivity: robust z-score
     };
-    _value.text = _kind == AlertKind.move || _kind == AlertKind.risk
+    _value.text = _isPercent(_kind) || _kind.isLiquidation
         ? v.toStringAsFixed(0)
         : v >= 100
             ? v.toStringAsFixed(0)
@@ -244,6 +263,26 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
       setState(() => _error = 'Risk score must be between 1 and 100%.');
       return;
     }
+    if (_kind.isLiquidation && !context.app.loggedIn) {
+      setState(() => _error =
+          'Log in to use liquidation alerts. They are checked by the backend, not the browser.');
+      return;
+    }
+    final spike = _kind == AlertKind.liqSpike ||
+        _kind == AlertKind.liqLong ||
+        _kind == AlertKind.liqShort;
+    if (spike && (v < 1 || v > 50)) {
+      setState(() => _error = 'Sensitivity must be between 1 and 50.');
+      return;
+    }
+    if (_kind == AlertKind.liqLarge && v < 1000) {
+      setState(() => _error = 'Use at least \$1,000.');
+      return;
+    }
+    if (_kind == AlertKind.liqImbal && v > 100) {
+      setState(() => _error = 'Shift must be between 1 and 100 points.');
+      return;
+    }
     context.app.addAlert(_symbol, _kind, v);
     final preview =
         PriceAlert(id: '', symbol: _symbol, kind: _kind, value: v).describe();
@@ -261,7 +300,9 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
 
     return PopCard(
       title: 'Create an alert',
-      subtitle: '${t.base} is ${Fmt.usd(t.price)} right now',
+      subtitle: t == null
+          ? '${_symbol.replaceAll('USDT', '')}: live price unavailable right now'
+          : '${t.base} is ${Fmt.usd(t.price)} right now',
       icon: Icons.add_alert_rounded,
       actions: [
         AppButton(
@@ -286,7 +327,17 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
           ),
           const FieldLabel('Alert condition'),
           SegmentPills(
-            options: const ['above', 'below', 'move', 'risk'],
+            options: const [
+              'above',
+              'below',
+              'move',
+              'risk',
+              'liqLarge',
+              'liqSpike',
+              'liqLong',
+              'liqShort',
+              'liqImbal',
+            ],
             labels: _kindLabels,
             selected: _kind.name,
             onChanged: (k) => setState(() {
@@ -297,6 +348,12 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
           FieldLabel(switch (_kind) {
             AlertKind.move => 'Percent move in 24 hours',
             AlertKind.risk => 'Risk score threshold (0-100%)',
+            AlertKind.liqLarge => 'Single observed liquidation of at least (USD)',
+            AlertKind.liqImbal => 'Change in long share of liquidations (points)',
+            AlertKind.liqSpike ||
+            AlertKind.liqLong ||
+            AlertKind.liqShort =>
+              'Sensitivity: robust z-score vs normal (3 = sensitive, 6 = extreme only)',
             _ => 'Price (USD)',
           }),
           TextField(
@@ -304,12 +361,15 @@ class _CreateAlertFormState extends State<_CreateAlertForm> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             style: AppText.number(15, w: FontWeight.w500),
             decoration: InputDecoration(
-              prefixText: _kind == AlertKind.move || _kind == AlertKind.risk
+              prefixText: _isPercent(_kind) ||
+                      (_kind.isLiquidation && _kind != AlertKind.liqLarge)
                   ? null
                   : '\$ ',
-              suffixText: _kind == AlertKind.move || _kind == AlertKind.risk
-                  ? '%'
-                  : null,
+              suffixText: _kind == AlertKind.liqImbal
+                  ? 'pts'
+                  : _isPercent(_kind)
+                      ? '%'
+                      : null,
             ),
             onChanged: (_) => setState(() => _error = null),
             onSubmitted: (_) => _save(),

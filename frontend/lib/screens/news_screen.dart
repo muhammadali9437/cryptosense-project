@@ -53,7 +53,7 @@ class _NewsScreenState extends State<NewsScreen> {
         ),
         child: DemoNote(app.newsLive
             ? 'Live news from the backend. Sentiment by ${app.newsEngine.isEmpty ? 'the backend model' : app.newsEngine}.'
-            : 'Demo headlines. Start the backend to load live news.'),
+            : 'News unavailable. Start the backend to load live news.'),
       ),
       if (items.isEmpty)
         Text('No stories match this filter right now.',

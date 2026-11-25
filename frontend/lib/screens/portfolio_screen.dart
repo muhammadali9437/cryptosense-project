@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../services/app_scope.dart';
-import '../services/mock_data.dart';
+import '../services/coins.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
@@ -35,7 +35,13 @@ class PortfolioScreen extends StatelessWidget {
             .toList()
           ..sort((a, b) => b.$2.compareTo(a.$2));
 
+        final missing =
+            app.holdings.where((h) => tickers[h.symbol] == null).toList();
         return PageBody(children: [
+          if (missing.isNotEmpty)
+            DemoNote(
+                'Live prices unavailable for ${missing.map((h) => h.base).join(', ')}: '
+                'those holdings are valued at your buy price, so their profit/loss shows 0 until prices return.'),
           _Summary(
               value: value, cost: cost, pnl: pnl, pnlPct: pnlPct, rows: rows),
           Panel(
@@ -208,7 +214,7 @@ class _HoldingRow extends StatelessWidget {
     final price = market.tickers[holding.symbol]?.price ?? holding.avgBuy;
     final pnl = (price - holding.avgBuy) * holding.amount;
     final pnlPct = (price - holding.avgBuy) / holding.avgBuy * 100;
-    final name = MockData.names[holding.symbol] ?? holding.base;
+    final name = coinName(holding.symbol);
 
     final limitText = [
       if (holding.stopLossPct != null)
@@ -227,8 +233,9 @@ class _HoldingRow extends StatelessWidget {
       );
       if (ok) {
         app.removeHolding(holding.symbol);
-        if (context.mounted)
+        if (context.mounted) {
           toast(context, '$name removed from your portfolio');
+        }
       }
     }
 
@@ -380,7 +387,8 @@ class _AddHoldingFormState extends State<_AddHoldingForm> {
   }
 
   void _setPrice() {
-    final p = context.market.ticker(_symbol).price;
+    final p = context.market.ticker(_symbol)?.price;
+    if (p == null) return; // no live price: the user types the buy price
     _price.text = p >= 1 ? p.toStringAsFixed(2) : p.toStringAsFixed(4);
   }
 

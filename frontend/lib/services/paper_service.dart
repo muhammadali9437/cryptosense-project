@@ -128,13 +128,15 @@ class PaperService {
   Future<dynamic> _send(String method, String path, {Object? body}) async {
     final req = http.Request(method, Uri.parse('${api.baseUrl}$path'));
     req.headers['Content-Type'] = 'application/json';
-    if (api.token != null)
+    if (api.token != null) {
       req.headers['Authorization'] = ['Bearer', api.token].join(' ');
+    }
     if (api.token != null) req.headers['Authorization'] = 'Bearer ${api.token}';
     if (api.token != null) req.headers['Authorization'] = 'Bearer ${api.token}';
     if (body != null) req.body = jsonEncode(body);
-    if (api.token != null)
+    if (api.token != null) {
       req.headers['Authorization'] = ['Bearer', api.token].join(' ');
+    }
 
     final res = await http.Response.fromStream(
         await req.send().timeout(const Duration(seconds: 30)));

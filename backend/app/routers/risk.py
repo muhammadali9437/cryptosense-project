@@ -56,7 +56,10 @@ async def one_risk(symbol: str, db: Session = Depends(get_db)):
     symbol = symbol.upper()
     if symbol not in settings.symbol_list:
         raise HTTPException(404, f"Not tracked. Use one of {settings.symbol_list}")
-    return next(r for r in await _all_risks(db) if r["symbol"] == symbol)
+    found = next((r for r in await _all_risks(db) if r["symbol"] == symbol), None)
+    if found is None:
+        raise HTTPException(503, f"Risk for {symbol} is unavailable: its live inputs could not be fetched.")
+    return found
 
 
 @router.get("/{symbol}/copilot")

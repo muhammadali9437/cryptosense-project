@@ -13,7 +13,7 @@ Create alerts for a price rising above a level, falling below a level, or moving
 Set a stop-loss (where you exit if a trade goes wrong) and a take-profit (where you lock in a gain) for each coin. CryptoSense alerts you when a limit is reached. It never sells anything for you.
 
 ## News, Whale watch and New listings pages
-News shows headlines tagged bullish, bearish or neutral by the FinBERT sentiment model, with Sage's take. Whale watch shows large transfers and whether money is moving onto or off exchanges. New listings shows coins listed on Binance in the last 60 days with a risk rating.
+News shows headlines tagged bullish, bearish or neutral by the VADER sentiment model with a crypto word list, with Sage's take. Whale watch shows large transfers and whether money is moving onto or off exchanges. New listings shows coins listed on Binance in the last 60 days with a risk rating.
 
 ## Academy and Ask Sage
 The Academy teaches how markets move in short lessons. Ask Sage answers questions using live prices, the AI signals, your portfolio, the latest news and the Academy lessons, and shows the sources it used.

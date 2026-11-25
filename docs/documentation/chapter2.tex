@@ -1,0 +1,54 @@
+\fypchapter{Appendix}{ch:appendix}
+
+\section{Appendix A. Complete API Route Inventory}
+The following inventory lists the API routes identified in the project source code (47 API routes and the health route). It was extracted automatically from the router declarations.
+\renewcommand{\routecaption}{Complete API route inventory.}
+\input{generated/routes_table}
+
+\section{Appendix B. Backend Python Class and Method Catalog}
+This appendix provides a source-derived catalog of Python classes, functions and methods, including signatures and source line numbers, extracted with Python's \texttt{ast} module from the current source. Docstrings are summarized where present. Undocumented entries include their source location and should be read with the method body for exact branching and side effects. Methods are indented under their class.
+{\small
+\input{generated/catalog_python}
+}
+
+\section{Appendix C. Flutter/Dart Class and Method Catalog}
+This appendix presents the detected classes and members in \texttt{frontend/lib}. Each entry lists the class, its source line, its documentation comment where present, and its members with their line numbers. The \texttt{build()} methods construct widget subtrees, while lifecycle methods manage state and resources. Refer to the original source files for exact implementation details.
+{\small
+\input{generated/catalog_dart}
+}
+
+\section{Glossary and Examined Project Sources}
+\subsection{Glossary}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.25\linewidth}|p{0.65\linewidth}|}
+\hline\textbf{Term} & \textbf{Meaning}\\\hline\endhead
+API & Application Programming Interface exposed by FastAPI.\\\hline
+ATR / RSI & Average True Range / Relative Strength Index.\\\hline
+AUC & Area under the ROC curve; 0.5 is no skill, 1.0 is perfect ranking.\\\hline
+Brier score & Mean squared error of a probability; lower is better.\\\hline
+ERD & Entity--Relationship Diagram.\\\hline
+FNG & Fear \& Greed Index context input.\\\hline
+Grounded explanation & AI-written text whose every number is checked against computed facts.\\\hline
+JWT & JSON Web Token used as a bearer token.\\\hline
+Liquidation & Forced closing of a leveraged futures position by the exchange.\\\hline
+Log loss & Penalty for confident wrong probabilities; lower is better.\\\hline
+MAD & Median absolute deviation, a robust measure of spread.\\\hline
+Macro F1 & Unweighted average of per-class F1 scores.\\\hline
+RAG & Retrieval-Augmented Generation.\\\hline
+Robust z-score & Distance from the median measured in MAD units.\\\hline
+TF-IDF & Term frequency--inverse document frequency keyword weighting.\\\hline
+\caption{Glossary of technical terms.}\label{tab:glossary}
+\end{longtable}}
+
+\subsection{Examined Project Sources}
+The documentation and source-derived catalog were prepared using the following project materials:
+\begin{itemize}
+\item \texttt{README.txt}: features, setup and run instructions.
+\item \texttt{backend/app/main.py}, \texttt{config.py}, \texttt{database.py}, \texttt{models.py}, \texttt{paper\_models.py}, \texttt{schemas.py}, \texttt{security.py}.
+\item \texttt{backend/app/routers/*.py} and \texttt{backend/app/services/*.py}.
+\item \texttt{backend/app/knowledge/*.md}; \texttt{backend/ml/train.py} and \texttt{backend/ml/models/metrics.json}.
+\item \texttt{backend/tests/*.py} (65 tests, executed).
+\item \texttt{frontend/lib/**/*.dart} and \texttt{frontend/pubspec.yaml}.
+\item The previous edition of this documentation, for the change log in Section~\ref{sec:changes}.
+\end{itemize}
+This inventory was generated from the local project snapshot of November 2026. The method catalog, endpoints, metrics and diagrams should be refreshed after material project changes.

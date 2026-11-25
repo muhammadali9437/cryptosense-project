@@ -15,7 +15,7 @@ from ..services.market import prices
 from ..services.news import latest_news
 from ..services.rag import kb
 from ..services.sentiment_index import fear_greed
-from ..services.signals import all_signals
+from ..services.signals import SignalUnavailable, all_signals
 from .portfolio import build_portfolio
 
 router = APIRouter(prefix="/api/chat", tags=["CryptoSentinel Risk Copilot"])
@@ -27,7 +27,10 @@ async def chat(body: ChatIn, user: User | None = Depends(optional_user), db: Ses
         fng = (await fear_greed(1))[0]
     except Exception:
         fng = None
-    signals = await all_signals()
+    try:
+        signals = await all_signals()
+    except SignalUnavailable:
+        signals = []  # Sage still answers; the specialists report signals as unavailable
     context = {
         "prices": await prices(),
         "signals": {s["symbol"]: s for s in signals},
@@ -60,5 +63,8 @@ async def rebuild_knowledge():
     n = await asyncio.to_thread(kb.build_static)
     news = (await latest_news())["items"]
     await asyncio.to_thread(kb.upsert_news, news)
-    await asyncio.to_thread(kb.upsert_signals, await all_signals())
+    try:
+        await asyncio.to_thread(kb.upsert_signals, await all_signals())
+    except SignalUnavailable:
+        pass
     return {**(await asyncio.to_thread(kb.status)), "static_docs": n, "news_docs": len(news)}

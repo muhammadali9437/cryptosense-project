@@ -42,7 +42,14 @@ const navEntries = [
       'Six specialist analyses, explained in plain words'),
   NavEntry('Paper trading', Icons.science_rounded, 'Practice', 'Paper trading',
       'Practice with 10,000 pretend dollars at real prices'),
+  NavEntry('Liquidations', Icons.local_fire_department_rounded, 'Discover',
+      'Liquidation intelligence',
+      'Forced closes of leveraged futures positions, as they happen'),
 ];
+
+/// Display order in the sidebar. Page numbers (indexes in [navEntries]) stay fixed because
+/// other screens jump to pages by number; new pages are appended and placed here instead.
+const navOrder = [0, 1, 2, 3, 4, 5, 10, 6, 7, 8, 9];
 
 /// Left navigation. On phones it lives inside the Drawer.
 class Sidebar extends StatelessWidget {
@@ -57,7 +64,7 @@ class Sidebar extends StatelessWidget {
       builder: (context, _) {
         final items = <Widget>[];
         String? group;
-        for (var i = 0; i < navEntries.length; i++) {
+        for (final i in navOrder) {
           final e = navEntries[i];
           if (e.group != group) {
             group = e.group;

@@ -1,20 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/models.dart';
-import 'mock_data.dart';
+import 'coins.dart';
 
 /// Real-time market data.
 ///
-/// 1. Tries Binance's public WebSocket (no API key needed) for live 24h tickers.
-/// 2. If Binance can't be reached, switches to a simulated "demo" feed so the
-///    UI keeps working (useful during a viva with bad Wi-Fi).
-/// 3. Candles come from Binance REST /api/v3/klines, with a demo fallback.
+/// 1. Loads a real snapshot from Binance REST (24h tickers + recent hourly closes).
+/// 2. Streams live 24h tickers from Binance's public WebSocket (no API key needed).
+/// 3. If Binance can't be reached, prices are simply unavailable ([hasPrices] is false,
+///    [isLive] is false) and a reconnect is retried; no made-up prices are ever shown.
+/// 4. Candles come from Binance REST /api/v3/klines (empty list when unavailable).
 class MarketService extends ChangeNotifier {
   static const symbols = [
     'BTCUSDT',
@@ -31,30 +31,69 @@ class MarketService extends ChangeNotifier {
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _sub;
-  Timer? _demoTimer;
-  final _rng = Random();
-  final _gotLive = <String>{};
+  Timer? _retryTimer;
   bool _notifyQueued = false;
   bool _disposed = false;
 
-  Ticker ticker(String symbol) => tickers[symbol]!;
+  /// Latest real ticker, or null when Binance hasn't delivered one.
+  Ticker? ticker(String symbol) => tickers[symbol];
+
+  /// True once real prices have been received at least once.
+  bool get hasPrices => tickers.isNotEmpty;
 
   Future<void> start() async {
-    for (final s in symbols) {
-      final p = MockData.seedPrices[s]!;
-      tickers[s] = Ticker(
-        symbol: s,
-        name: MockData.names[s]!,
-        price: p,
-        changePct: MockData.seedChange[s]!,
-        quoteVolume: MockData.seedVolume[s]!,
-        high: p * 1.021,
-        low: p * 0.978,
-        history: MockData.walk(p, 40, 0.004),
-      );
-    }
-    notifyListeners();
+    await _loadSnapshot();
     await _connectLive();
+  }
+
+  /// Real starting values: 24h tickers + the last 40 hourly closes for the sparklines.
+  Future<void> _loadSnapshot() async {
+    try {
+      final list = jsonEncode(symbols);
+      final res = await http
+          .get(Uri.parse(
+              'https://api.binance.com/api/v3/ticker/24hr?symbols=${Uri.encodeComponent(list)}'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return;
+      final rows = jsonDecode(res.body) as List<dynamic>;
+      final histories = await Future.wait(symbols.map(_recentCloses));
+      for (final r in rows.cast<Map<String, dynamic>>()) {
+        final s = r['symbol'] as String;
+        final i = symbols.indexOf(s);
+        if (i < 0) continue;
+        final price = double.parse(r['lastPrice'] as String);
+        tickers[s] = Ticker(
+          symbol: s,
+          name: coinName(s),
+          price: price,
+          changePct: double.parse(r['priceChangePercent'] as String),
+          quoteVolume: double.parse(r['quoteVolume'] as String),
+          high: double.parse(r['highPrice'] as String),
+          low: double.parse(r['lowPrice'] as String),
+          history: [...histories[i], price],
+        );
+      }
+      lastUpdate = DateTime.now();
+      notifyListeners();
+    } catch (_) {
+      // Binance unreachable: prices stay unavailable until the stream connects.
+    }
+  }
+
+  Future<List<double>> _recentCloses(String symbol) async {
+    try {
+      final res = await http
+          .get(Uri.parse(
+              'https://api.binance.com/api/v3/klines?symbol=$symbol&interval=1h&limit=40'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return const [];
+      return [
+        for (final k in jsonDecode(res.body) as List<dynamic>)
+          double.parse((k as List<dynamic>)[4] as String)
+      ];
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<void> _connectLive() async {
@@ -71,12 +110,12 @@ class MarketService extends ChangeNotifier {
       }
       _channel = channel;
       _sub = channel.stream
-          .listen(_onMessage, onError: (_) => _startDemo(), onDone: _startDemo);
+          .listen(_onMessage, onError: (_) => _offline(), onDone: _offline);
       isLive = true;
       _queueNotify();
     } catch (_) {
       channel?.sink.close();
-      _startDemo();
+      _offline();
     }
   }
 
@@ -85,19 +124,19 @@ class MarketService extends ChangeNotifier {
       final msg = jsonDecode(raw as String) as Map<String, dynamic>;
       final d = msg['data'] as Map<String, dynamic>;
       final symbol = d['s'] as String;
-      final old = tickers[symbol];
-      if (old == null) return;
-
+      if (!symbols.contains(symbol)) return;
       final price = double.parse(d['c'] as String);
-      List<double> history;
-      if (_gotLive.add(symbol)) {
-        // First live tick: rescale the demo sparkline so it ends at the real price.
-        final ratio = price / old.history.last;
-        history = old.history.map((v) => v * ratio).toList();
-      } else {
-        history = [...old.history, price];
-        if (history.length > 60) history.removeAt(0);
-      }
+      final old = tickers[symbol] ??
+          Ticker(
+              symbol: symbol,
+              name: coinName(symbol),
+              price: price,
+              changePct: 0,
+              quoteVolume: 0,
+              high: price,
+              low: price);
+      final history = [...old.history, price];
+      if (history.length > 60) history.removeAt(0);
 
       tickers[symbol] = old.copyWith(
         price: price,
@@ -124,37 +163,27 @@ class MarketService extends ChangeNotifier {
     });
   }
 
-  void _startDemo() {
+  /// Connection lost or impossible: mark prices as not live and retry in 15 seconds.
+  /// The last real prices stay visible, labelled as not live by [isLive].
+  void _offline() {
     if (_disposed) return;
     isLive = false;
     _sub?.cancel();
     _sub = null;
     _channel?.sink.close();
     _channel = null;
-    _demoTimer ??=
-        Timer.periodic(const Duration(seconds: 2), (_) => _tickDemo());
     _queueNotify();
-  }
-
-  void _tickDemo() {
-    for (final s in symbols) {
-      final t = tickers[s]!;
-      final price = t.price * (1 + (_rng.nextDouble() - 0.5) * 0.0024);
-      final history = [...t.history, price];
-      if (history.length > 60) history.removeAt(0);
-      tickers[s] = t.copyWith(
-        price: price,
-        changePct: t.changePct + (price / t.price - 1) * 100,
-        high: max(t.high, price),
-        low: min(t.low, price),
-        history: history,
-      );
-    }
-    lastUpdate = DateTime.now();
-    notifyListeners();
+    _retryTimer?.cancel();
+    _retryTimer = Timer(const Duration(seconds: 15), () async {
+      if (_disposed) return;
+      if (!hasPrices) await _loadSnapshot();
+      await _connectLive();
+    });
   }
 
   /// OHLCV candles for the chart. [interval] is one of 15m, 1h, 4h, 1d.
+  /// Returns an empty list when Binance can't be reached; the chart then says so.
+  /// (Made-up demo candles are never shown in place of real market data.)
   Future<List<Candle>> candles(String symbol, String interval) async {
     try {
       final uri = Uri.parse(
@@ -175,9 +204,9 @@ class MarketService extends ChangeNotifier {
         }).toList();
       }
     } catch (_) {
-      // fall through to demo candles
+      // Binance unreachable or returned bad data.
     }
-    return MockData.candles(tickers[symbol]?.price ?? 100, interval);
+    return const [];
   }
 
   /// 0..100 mood score from the average 24h move of the tracked coins.
@@ -203,7 +232,7 @@ class MarketService extends ChangeNotifier {
     _disposed = true;
     _sub?.cancel();
     _channel?.sink.close();
-    _demoTimer?.cancel();
+    _retryTimer?.cancel();
     super.dispose();
   }
 }

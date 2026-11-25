@@ -11,7 +11,7 @@ import 'account.dart';
 import 'bits.dart';
 import 'sidebar.dart';
 
-/// Page title, BTC/ETH price chips, live/demo status, clock and tour button.
+/// Page title, BTC/ETH price chips, live/offline status, clock and tour button.
 class TopBar extends StatelessWidget {
   const TopBar(
       {super.key,
@@ -62,10 +62,12 @@ class TopBar extends StatelessWidget {
                 ),
               ),
               if (showChips) ...[
-                _TickerChip(market.ticker('BTCUSDT')),
-                const SizedBox(width: 8),
-                _TickerChip(market.ticker('ETHUSDT')),
-                const SizedBox(width: 12),
+                for (final s in const ['BTCUSDT', 'ETHUSDT'])
+                  if (market.ticker(s) != null) ...[
+                    _TickerChip(market.ticker(s)!),
+                    const SizedBox(width: 8),
+                  ],
+                const SizedBox(width: 4),
               ],
               _LiveBadge(live: market.isLive),
               if (showSub) ...[const SizedBox(width: 12), const _Clock()],
@@ -140,7 +142,7 @@ class _LiveBadgeState extends State<_LiveBadge>
     return Tooltip(
       message: widget.live
           ? 'Prices are streaming live from Binance.'
-          : "Couldn't reach Binance, so prices are simulated. Check your connection.",
+          : "Couldn't reach Binance. Prices are not live (retrying automatically).",
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -162,7 +164,7 @@ class _LiveBadgeState extends State<_LiveBadge>
               ),
             ),
             const SizedBox(width: 8),
-            Text(widget.live ? 'Live' : 'Demo data',
+            Text(widget.live ? 'Live' : 'Offline',
                 style: AppText.body(12.5, color: color, w: FontWeight.w600)),
           ],
         ),

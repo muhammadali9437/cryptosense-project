@@ -21,12 +21,9 @@ def level_of(pct: float) -> str:
 
 
 def _bearish_probability(signal: dict) -> float:
-    probs = signal.get("probabilities") or {}
-    if "bearish" in probs:
-        return float(probs["bearish"])
-    # rule-based fallback (before the AI models are trained)
-    return {"bearish": float(signal.get("confidence", 0.6)), "neutral": 0.3, "bullish": 0.1}.get(
-        signal.get("trend", "neutral"), 0.3)
+    """The ensemble's (uncalibrated) bearish-class probability. Signals only exist when a
+    trained model produced them, so there is no made-up fallback value."""
+    return float(signal["probabilities"]["bearish"])
 
 
 def score_from(signal: dict) -> dict:
@@ -50,7 +47,8 @@ def score_from(signal: dict) -> dict:
         if sma50 < 0 else f"Price is {sma50:.1f}% above its 50-hour average, so the trend is holding.")
 
     add("AI model view", 15, p_bear,
-        f"The AI models give about a {p_bear * 100:.0f}% chance of a clear fall in the next 24 hours.")
+        f"The AI ensemble's bearish score is {p_bear * 100:.0f}% for the next 24 hours "
+        "(a raw model score, not a calibrated probability).")
 
     dev = abs(rsi - 50)
     add("Momentum stretch", 10, (dev - 20) / 30,

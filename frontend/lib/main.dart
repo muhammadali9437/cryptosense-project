@@ -29,7 +29,7 @@ class _CryptoSenseAppState extends State<CryptoSenseApp> {
   void initState() {
     super.initState();
     market.start(); // live prices from Binance
-    app.init(); // connect to the backend (falls back to demo mode if it's offline)
+    app.init(); // connect to the backend (backend data shows as unavailable while it's offline)
   }
 
   @override

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../services/app_scope.dart';
-import '../services/mock_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
@@ -33,39 +32,24 @@ class _WhaleScreenState extends State<WhaleScreen> {
   @override
   void initState() {
     super.initState();
-    // Backend with Whale Alert key: refresh the real feed about once a minute.
-    // Otherwise: a simulated whale move every ~7 seconds.
-    _timer = Timer.periodic(const Duration(seconds: 7), (timer) async {
+    // Refresh the real Whale Alert feed (via the backend) about once a minute.
+    // Without a live feed nothing is shown: transfers are never simulated.
+    _timer = Timer.periodic(const Duration(seconds: 60), (_) async {
       if (!mounted) return;
       final app = context.app;
-      if (app.whalesLive) {
-        if (timer.tick % 8 != 0) return;
-        final known = _feed.map((t) => t.id).toSet();
-        await app.refreshWhales();
-        if (!mounted) return;
-        final added = app.whales
-            .where((t) => !known.contains(t.id))
-            .map((t) => t.id)
-            .toSet();
-        setState(() {
-          _feed
-            ..clear()
-            ..addAll(app.whales);
-          _fresh.addAll(added);
-        });
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) setState(() => _fresh.removeAll(added));
-        });
-        return;
-      }
-      final tx = MockData.randomWhale();
+      final known = _feed.map((t) => t.id).toSet();
+      await app.refreshWhales();
+      if (!mounted) return;
+      final added =
+          app.whales.where((t) => !known.contains(t.id)).map((t) => t.id).toSet();
       setState(() {
-        _feed.insert(0, tx);
-        if (_feed.length > 40) _feed.removeLast();
-        _fresh.add(tx.id);
+        _feed
+          ..clear()
+          ..addAll(app.whales);
+        _fresh.addAll(added);
       });
       Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _fresh.remove(tx.id));
+        if (mounted) setState(() => _fresh.removeAll(added));
       });
     });
   }
@@ -86,7 +70,9 @@ class _WhaleScreenState extends State<WhaleScreen> {
     final outflow = sum(WhaleFlow.fromExchange);
     final total = inflow + outflow;
 
-    final read = total == 0
+    final read = !context.app.whalesLive
+        ? 'Live whale data is unavailable (add WHALE_ALERT_KEY to the backend .env file), so no exchange flows can be shown.'
+        : total == 0
         ? 'No large exchange flows in the last hour. Quiet whales usually mean no big pressure either way.'
         : inflow > outflow * 1.2
             ? 'More money is moving onto exchanges than off them. Some big holders may be getting ready to sell, so watch for selling pressure.'
@@ -191,6 +177,43 @@ class _WhaleScreenState extends State<WhaleScreen> {
                   ),
                 ],
               ),
+              if (snapshot.read.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(snapshot.read, style: AppText.body(14, height: 1.5)),
+              ],
+              if (snapshot.timeframes.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(spacing: 10, runSpacing: 8, children: [
+                  for (final f in snapshot.timeframes)
+                    _Chip(
+                        '${f.label}: ${Fmt.compact(f.totalUsd)} '
+                        '(${f.count} events)'),
+                ]),
+              ],
+              if (snapshot.topSymbols.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text('Most liquidated coins (last hour)',
+                    style: AppText.body(13, color: AppColors.muted)),
+                const SizedBox(height: 6),
+                for (final s in snapshot.topSymbols.take(5))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${s.label.replaceAll("USDT", "")}  ${Fmt.compact(s.totalUsd)}  '
+                      '(longs ${Fmt.compact(s.longUsd)} / shorts ${Fmt.compact(s.shortUsd)})',
+                      style: AppText.body(14),
+                    ),
+                  ),
+              ],
+              if (snapshot.largest != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Largest: ${snapshot.largest!.symbol.replaceAll("USDT", "")} '
+                  '${snapshot.largest!.position} ${Fmt.compact(snapshot.largest!.usd)} '
+                  '${Fmt.ago(snapshot.largest!.time)}',
+                  style: AppText.body(14, color: AppColors.warn),
+                ),
+              ],
               const SizedBox(height: 12),
               if (recent.isEmpty)
                 Text(
@@ -206,6 +229,56 @@ class _WhaleScreenState extends State<WhaleScreen> {
                       style: AppText.body(14),
                     ),
                   ),
+            ],
+          );
+        }),
+      ),
+      Panel(
+        title: 'Smart money in crypto stocks',
+        subtitle:
+            'US Congress and company-insider trades in crypto-linked stocks (Quiver Quantitative)',
+        child: Builder(builder: (context) {
+          final sm = context.app.smartMoney;
+          if (sm == null) {
+            return const DemoNote('Quiver data has not been checked yet.');
+          }
+          if (!sm.live) {
+            return DemoNote(sm.note.isNotEmpty
+                ? sm.note
+                : 'Quiver Quantitative is unavailable right now (${sm.congressStatus}). No demo data is shown.');
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (sm.read.isNotEmpty)
+                Text(sm.read, style: AppText.body(14, height: 1.5)),
+              const SizedBox(height: 12),
+              Text('Congress trades',
+                  style: AppText.body(13, color: AppColors.muted)),
+              const SizedBox(height: 6),
+              if (sm.congressStatus != 'ok')
+                Text('Congress feed unavailable (${sm.congressStatus}).',
+                    style: AppText.body(14, color: AppColors.muted))
+              else if (sm.congress.isEmpty)
+                Text('No recent Congress trades in these tickers.',
+                    style: AppText.body(14, color: AppColors.muted))
+              else
+                for (final t in sm.congress.take(8)) _SmartMoneyRow(trade: t),
+              const SizedBox(height: 12),
+              Text('Insider trades (open market)',
+                  style: AppText.body(13, color: AppColors.muted)),
+              const SizedBox(height: 6),
+              if (sm.insiderStatus == 'plan_required')
+                Text('Insider trades need a Quiver Trader plan or higher.',
+                    style: AppText.body(14, color: AppColors.muted))
+              else if (sm.insiderStatus != 'ok')
+                Text('Insider feed unavailable (${sm.insiderStatus}).',
+                    style: AppText.body(14, color: AppColors.muted))
+              else if (sm.insiders.isEmpty)
+                Text('No recent open-market insider trades in these tickers.',
+                    style: AppText.body(14, color: AppColors.muted))
+              else
+                for (final t in sm.insiders.take(8)) _SmartMoneyRow(trade: t),
             ],
           );
         }),
@@ -236,11 +309,60 @@ class _WhaleScreenState extends State<WhaleScreen> {
               _WhaleRow(tx: t, fresh: _fresh.contains(t.id)),
             if (!context.app.whalesLive)
               const DemoNote(
-                  'Simulated feed. Add WHALE_ALERT_KEY to the backend .env file for real transfers.'),
+                  'No live whale feed. Add WHALE_ALERT_KEY to the backend .env file for real transfers.'),
           ],
         ),
       ),
     ]);
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.muted.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(text, style: AppText.body(13)),
+      );
+}
+
+class _SmartMoneyRow extends StatelessWidget {
+  const _SmartMoneyRow({required this.trade});
+  final SmartMoneyTrade trade;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = trade.isBuy ? AppColors.bull : AppColors.warn;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 52,
+            child: Text(trade.ticker, style: AppText.body(14)),
+          ),
+          SizedBox(
+            width: 40,
+            child: Text(trade.isBuy ? 'Buy' : 'Sell',
+                style: AppText.body(14, color: color)),
+          ),
+          Expanded(
+            child: Text(
+              '${trade.who}${trade.detail.isEmpty ? '' : ' (${trade.detail})'}'
+              '${trade.amount.isEmpty ? '' : '  ${trade.amount}'}  ${Fmt.ago(trade.time)}',
+              style: AppText.body(14),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

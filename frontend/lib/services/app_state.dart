@@ -7,7 +7,6 @@ import '../models/models.dart';
 import '../utils/format.dart';
 import 'api_service.dart';
 import 'market_service.dart';
-import 'mock_data.dart';
 import 'sage_brain.dart';
 
 /// Everything the user creates or sees besides live prices.
@@ -15,7 +14,8 @@ import 'sage_brain.dart';
 /// Backend running  -> signals, news, whales and listings come from FastAPI;
 ///                     when logged in, portfolio, limits and alerts are saved in the database
 ///                     and the server sends alert notifications.
-/// Backend offline  -> the app keeps working with demo data and in-memory state (guest mode).
+/// Backend offline  -> signals, news, whales and listings show as unavailable (never made up);
+///                     portfolio, limits and alerts work in memory (guest mode).
 class AppState extends ChangeNotifier {
   AppState(this.api);
 
@@ -34,45 +34,27 @@ class AppState extends ChangeNotifier {
   ApiUser? user;
   bool get loggedIn => user != null;
 
-  List<AiSignal> signals = List.of(MockData.signals);
+  List<AiSignal> signals = [];
   Map<String, RiskScore> risks = {};
   bool risksLive = false;
-  List<NewsItem> news = List.of(MockData.news);
-  List<WhaleTx> whales = List.of(MockData.whaleSeed);
-  List<NewListing> listings = List.of(MockData.listings);
+  List<NewsItem> news = [];
+  List<WhaleTx> whales = [];
+  List<NewListing> listings = [];
   bool signalsLive = false,
       newsLive = false,
       whalesLive = false,
       listingsLive = false;
   LiquidationSnapshot? liquidations;
   bool liquidationsLive = false;
+  SmartMoneySnapshot? smartMoney;
   String newsEngine = '';
 
   Timer? _refreshTimer, _notifyTimer;
 
-  // Guest (not logged in) starts with sample coins so every page has something to show.
-  final List<Holding> holdings = [
-    Holding(
-        symbol: 'BTCUSDT',
-        amount: 0.12,
-        avgBuy: 61200,
-        stopLossPct: 8,
-        takeProfitPct: 20),
-    Holding(
-        symbol: 'ETHUSDT',
-        amount: 1.6,
-        avgBuy: 3320,
-        stopLossPct: 10,
-        takeProfitPct: 25),
-    Holding(symbol: 'SOLUSDT', amount: 14, avgBuy: 162, stopLossPct: 12),
-  ];
+  // Guest (not logged in) starts empty; nothing is pre-filled.
+  final List<Holding> holdings = [];
 
-  final List<PriceAlert> alerts = [
-    PriceAlert(
-        id: 'a1', symbol: 'BTCUSDT', kind: AlertKind.above, value: 70000),
-    PriceAlert(id: 'a2', symbol: 'ETHUSDT', kind: AlertKind.below, value: 3200),
-    PriceAlert(id: 'a3', symbol: 'SOLUSDT', kind: AlertKind.move, value: 8),
-  ];
+  final List<PriceAlert> alerts = [];
 
   final List<ChatMessage> chat = [
     ChatMessage(text: SageBrain.greeting, fromUser: false)
@@ -113,6 +95,7 @@ class AppState extends ChangeNotifier {
       refreshWhales(),
       refreshListings(),
       refreshLiquidations(),
+      refreshSmartMoney(),
     ]);
   }
 
@@ -142,7 +125,7 @@ class AppState extends ChangeNotifier {
     try {
       final r = await api.news();
       if (r.items.isNotEmpty) news = r.items;
-      newsLive = r.source != 'demo' && r.items.isNotEmpty;
+      newsLive = r.source != 'unavailable' && r.items.isNotEmpty;
       newsEngine = r.engine;
     } catch (_) {
       newsLive = false;
@@ -153,8 +136,8 @@ class AppState extends ChangeNotifier {
   Future<void> refreshWhales() async {
     try {
       final r = await api.whales();
-      if (r.items.isNotEmpty) whales = r.items;
-      whalesLive = r.source != 'demo';
+      whales = r.items;
+      whalesLive = r.source == 'whale_alert';
     } catch (_) {
       whalesLive = false;
     }
@@ -168,6 +151,15 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       liquidations = null;
       liquidationsLive = false;
+    }
+    notifyListeners();
+  }
+
+  Future<void> refreshSmartMoney() async {
+    try {
+      smartMoney = await api.smartMoney();
+    } catch (_) {
+      smartMoney = null;
     }
     notifyListeners();
   }
@@ -291,16 +283,18 @@ class AppState extends ChangeNotifier {
       holdings.add(Holding(symbol: symbol, amount: amount, avgBuy: price));
     }
     notifyListeners();
-    if (loggedIn)
+    if (loggedIn) {
       _sync(() async =>
           _setHoldings(await api.addHolding(symbol, amount, price)));
+    }
   }
 
   void removeHolding(String symbol) {
     holdings.removeWhere((h) => h.symbol == symbol);
     notifyListeners();
-    if (loggedIn)
+    if (loggedIn) {
       _sync(() async => _setHoldings(await api.removeHolding(symbol)));
+    }
   }
 
   void setLimits(String symbol, double? stopLoss, double? takeProfit) {
@@ -310,9 +304,10 @@ class AppState extends ChangeNotifier {
     h.takeProfitPct = takeProfit;
     h.limitFired = false;
     notifyListeners();
-    if (loggedIn)
+    if (loggedIn) {
       _sync(() async =>
           _setHoldings(await api.setLimits(symbol, stopLoss, takeProfit)));
+    }
   }
 
   // ---------------------------------------------------------------- alerts
@@ -366,6 +361,7 @@ class AppState extends ChangeNotifier {
         AlertKind.below => t.price <= a.value,
         AlertKind.move => t.changePct.abs() >= a.value,
         AlertKind.risk => (risks[a.symbol]?.riskPct ?? 0) >= a.value,
+        _ => false, // liquidation alerts are checked by the backend
       };
       if (hit) {
         a.active = false;

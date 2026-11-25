@@ -1,0 +1,531 @@
+\fypchapter{Introduction}{ch:intro}
+
+% =====================================================================
+\section{Introduction}
+\subsection{Background}
+Cryptocurrency markets operate continuously and expose users to fast price changes, high volatility, information overload and uneven data quality. The project consolidates live market observations and contextual indicators into a dashboard. It presents signals with explanations and risk factors, explains forced liquidations in the futures market, and offers educational and simulation features that help users understand market mechanics without placing real trades.
+
+\subsection{Problem Statement}
+An individual observer may switch among exchanges, charts, news feeds, liquidation trackers and portfolio records to understand a market move. Raw indicators can be difficult to interpret, uncontextualized AI predictions can mislead, and AI chatbots can produce fluent answers containing invented numbers. CryptoSense addresses this problem by combining a data dashboard, explanatory analytics, portfolio and alert tracking and a paper wallet, while explicitly presenting forecast uncertainty and never displaying made-up data.
+
+\subsection{Aim and Objectives}
+\begin{itemize}
+\item Build a web interface for live market prices and candlestick data.
+\item Integrate REST services with market, news, Fear \& Greed and optional external providers.
+\item Engineer indicators and generate a three-class 24-hour market-state signal, or report it as unavailable when a real input is missing.
+\item Expose explainable per-coin and portfolio risk scores and a Risk Copilot with history, historical analogs, key levels and what-if analysis.
+\item Track, analyse and explain observed futures liquidations with robust statistics and alerts.
+\item Support accounts, holdings, price alerts, P\&L limits and optional Telegram notifications.
+\item Provide fee-aware simulated trades without exchange execution.
+\item Deliver retrieval-grounded chat answers from six specialist analysts, with AI-written numbers checked against computed facts and a rules fallback.
+\item Document limitations, operations and interfaces, and the changes since the previous edition.
+\end{itemize}
+
+\subsection{Scope and Exclusions}
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{|X|X|}\hline
+\textbf{Included} & \textbf{Not Included / Not Guaranteed}\\\hline
+Default coverage: BTC, ETH, BNB, SOL, XRP and ADA; live data when reachable. & No exchange connection, key custody, real orders, guaranteed prices or investment advice.\\\hline
+Signals, risk assessment and Risk Copilot, portfolio, alerts, simulated trading, news, whales, crypto-linked stock trades, listings, liquidations, academy and Sage. & Whale and crypto-linked stock data need provider keys; without them the feature reports ``unavailable'' (no demo data). Language-model answers need a Claude or Groq key; otherwise rules answer.\\\hline
+\end{tabularx}
+\caption{Scope and exclusions.}\label{tab:scope}
+\end{table}
+
+\subsection{Stakeholders}
+\begin{itemize}
+\item \textbf{Guest:} reads public analytics, keeps a portfolio and alerts in browser memory and asks Sage.
+\item \textbf{Registered User:} stores holdings, alerts, notifications and practice-account history.
+\item \textbf{Maintainer:} configures, deploys and may retrain models.
+\item \textbf{Providers:} Binance (spot and USD-M futures), RSS news, Fear \& Greed, and optional CryptoPanic, Whale Alert, Quiver Quantitative, Anthropic Claude, Groq, TypeSafe Jev and Telegram.
+\end{itemize}
+
+% =====================================================================
+\section{Changes Since the Previous Version}\label{sec:changes}
+This section records what was added, changed and removed since the previous edition of this documentation. The guiding rule of the revision was that \textit{nothing fake is shown}: every demo, simulated or placeholder data path was removed, and every feature that depends on live data now reports ``unavailable'' with the missing inputs when that data cannot be obtained.
+
+\subsection{Added}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.30\linewidth}|p{0.62\linewidth}|}
+\hline\textbf{Item} & \textbf{Description}\\\hline\endhead
+Liquidation intelligence & Live Binance \texttt{!forceOrder} stream, stored events, statistics for 5m--24h windows, timeline, history, robust spike detection, market context, explanations, alerts and a new Liquidations screen (\texttt{routers/liquidations.py}, seven \texttt{liquidation\_*} services, \texttt{liquidations\_screen.dart}, \texttt{liquidation\_models.dart}).\\\hline
+Risk Copilot & Risk history, historical market analogs (``twins''), model votes, UTC key levels and a volatility what-if (\texttt{/api/risk/\{symbol\}/copilot}, \texttt{/simulate}; \texttt{copilot.py}, \texttt{levels.py}).\\\hline
+Six specialist analysts & Market intelligence, derivatives, on-chain, sentiment and news, risk assessment and explanation agents feed every Sage answer (\texttt{agents.py}, \texttt{/api/chat/agents}).\\\hline
+Claude language model & Anthropic Claude is the first language model for Sage and explanations; Groq (OpenAI-compatible) is the fallback, then rules.\\\hline
+Grounded explanations & Every number in AI-written text must match a computed fact, otherwise the rules answer is shown (\texttt{explainer.py}).\\\hline
+Quiver Quantitative & Congress and insider trades in crypto-linked US stocks (COIN, MSTR, miners, bitcoin ETFs) (\texttt{quiver.py}, \texttt{/api/quiver}).\\\hline
+Telegram alerts & Optional delivery of alerts to one configured chat (\texttt{telegram.py}, \texttt{TEST\_TELEGRAM.bat}).\\\hline
+Unavailable reporting & \texttt{SignalUnavailable} returns HTTP 503 listing the missing inputs; the app shows the reason and retries.\\\hline
+Automated tests & 65 backend tests in 11 files, including no-fake-data, liquidation and integration tests (all passed).\\\hline
+Knowledge endpoints & \texttt{/api/chat/knowledge} and \texttt{/api/chat/knowledge/rebuild} for the retrieval store.\\\hline
+Longer training history & Training defaults to ten years of requested history and keeps only hours with real funding and Fear \& Greed data.\\\hline
+\caption{Components added since the previous version.}\label{tab:added}
+\end{longtable}}
+
+\subsection{Removed}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.30\linewidth}|p{0.62\linewidth}|}
+\hline\textbf{Item} & \textbf{Reason}\\\hline\endhead
+Demo data (\texttt{demo.py}, \texttt{mock\_data.dart}) & Generated fake candles, prices, news, whales and listings. Replaced by ``unavailable'' messages.\\\hline
+Demo fallbacks in services & Sample news, simulated whale transfers, filled-in funding and Fear \& Greed values and the client-side demo ticker were removed.\\\hline
+Optional GRU (\texttt{deep.py}) and \texttt{requirements-ai.txt} & The recurrent network was never trained for deployment; PyTorch, Transformers, FinBERT and ChromaDB dependencies were dropped.\\\hline
+Rules-based ``prediction'' & \texttt{\_rules()} produced signals without a trained model; signals now require trained models.\\\hline
+Move/calm gate and walk-forward code & Replaced by a simpler confidence rule (directional calls below 0.55 become neutral); evaluation uses the chronological test set and a same-period history comparison.\\\hline
+Big Moves page (\texttt{bigmoves.py}, \texttt{big\_moves\_screen.dart}, \texttt{big\_moves\_service.dart}) & Replaced by the liquidation intelligence dashboard.\\\hline
+Liquidity heatmap and levels (\texttt{liq\_heatmap.py}, \texttt{liq\_model.py}, \texttt{liquidity*.dart}) & Depended on a provisional third-party feed (Apify) with unconfirmed fields; replaced by observed liquidations and candle-based key levels.\\\hline
+Research scripts (\texttt{leak\_audit.py}, \texttt{research.py}, \texttt{selective.py}) & One-off experiments not used by the application.\\\hline
+Login screen and counter widget test & Sign-in moved to an account dialog (\texttt{widgets/account.dart}); the template counter test referenced classes that no longer exist.\\\hline
+Dense retrieval (sentence-transformers, ChromaDB) & The knowledge base uses TF-IDF only.\\\hline
+n8n chat webhook, Dockerfile, \texttt{BUILD\_WEB.bat} & Chat answers come from the backend; hosting uses \texttt{railway.toml}.\\\hline
+Endpoints & \texttt{/api/bigmoves}, \texttt{/api/liquidation-heatmap/\{symbol\}} and \texttt{/api/liquidity/\{symbol\}}.\\\hline
+\caption{Components removed since the previous version.}\label{tab:removed}
+\end{longtable}}
+
+\subsection{Changed}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.24\linewidth}|p{0.32\linewidth}|p{0.32\linewidth}|}
+\hline\textbf{Area} & \textbf{Previous version} & \textbf{Current version}\\\hline\endhead
+Features & 38 (technical, context, regime) & 18 (12 technical, 6 context)\\\hline
+Label threshold & $\pm1.5\%$ in 24 hours & $\pm2.5\%$ in 24 hours\\\hline
+Training history & 730 days & Deployed models: 730 days; training default: 3{,}650 days of real hours\\\hline
+Signal decision & Move/calm gate on top of the ensemble & Weighted ensemble; directional call below 0.55 confidence becomes neutral\\\hline
+Without models or data & Rules fallback and demo candles & HTTP 503 ``unavailable'' with missing inputs\\\hline
+News sentiment & FinBERT if installed, else VADER & VADER with a crypto word list; optional Jev comparison\\\hline
+Sage answers & LLM (if configured) or rules & Six specialists + TF-IDF retrieval; Claude, then Groq, then rules; numbers verified\\\hline
+Navigation & Big Moves page & Liquidations page (11 pages in total)\\\hline
+API routes & 36 & 47 plus the health route\\\hline
+Tests & Template counter test only & 65 backend tests, all passing\\\hline
+\caption{Behaviour changed since the previous version.}\label{tab:changed}
+\end{longtable}}
+
+% =====================================================================
+\section{Requirements and Use Cases}
+\subsection{Functional Requirements}
+The functional requirements describe the main operations and services provided by the CryptoSense application.
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.11\linewidth}|p{0.47\linewidth}|p{0.32\linewidth}|}
+\hline\textbf{ID} & \textbf{Requirement} & \textbf{Implemented By}\\\hline\endhead
+FR-01 & Display tickers, candles and market mood from live data. & Market router / market service; Flutter MarketService\\\hline
+FR-02 & Generate trend, confidence, reasons, model votes and key levels, or report the signal unavailable. & Signals / predictor / features / levels\\\hline
+FR-03 & Compute factor and portfolio risk; Risk Copilot with history, analogs and what-if. & Risk router; risk and copilot services\\\hline
+FR-04 & Register, authenticate and restore session. & Auth / security\\\hline
+FR-05 & CRUD/toggle alerts; expose notifications; optional Telegram delivery. & Alerts / watcher / telegram\\\hline
+FR-06 & Track holdings, P\&L and stop-loss/take-profit limits. & Portfolio / watcher\\\hline
+FR-07 & Simulated trades, history and account reset. & Paper router / service\\\hline
+FR-08 & Browse news, whales, crypto-linked stock trades and listings. & Discover / services\\\hline
+FR-09 & Track, analyse and explain observed liquidations; detect spikes. & Liquidations router / liquidation services\\\hline
+FR-10 & Ask Sage; return specialist reports and source metadata. & Chat / agents / RAG / Sage / explainer\\\hline
+FR-11 & Report unavailable data instead of showing demo data. & SignalUnavailable handler; ``unavailable'' states\\\hline
+\caption{Functional requirements.}\label{tab:fr}
+\end{longtable}}
+
+\subsection{Non-Functional Requirements}
+The non-functional requirements describe the quality attributes and operational characteristics of CryptoSense.
+\begin{itemize}
+\item \textbf{Usability:} plain-language explanations, visual summaries and a guided tour.
+\item \textbf{Honesty:} no demo or filled-in data; unavailable inputs are named; AI-written numbers must match computed facts.
+\item \textbf{Availability:} when a provider fails, dependent views say ``unavailable'' and retry; other features keep working.
+\item \textbf{Performance:} asynchronous providers, short-lived cache and scheduled refresh loops; liquidation events are written to the database in batches every few seconds.
+\item \textbf{Security:} bcrypt hashes, JWT bearer tokens, server-side ownership filters and environment secrets.
+\item \textbf{Portability:} Flutter web; FastAPI; SQLite locally and PostgreSQL when hosted.
+\item \textbf{Integrity:} chronological ML splits with horizon gaps; backward-only context joins.
+\end{itemize}
+
+\subsection{Use-Case Diagram}
+The diagram illustrates the user-facing capabilities and system boundary of CryptoSense.
+\diagram{diagrams/02_use_case_diagram.png}{User-facing capabilities and system boundary.}{fig:usecase}{0.95\linewidth}
+
+\subsection{Use-Case Narratives}
+The following table describes the main use cases, their execution flows and alternative conditions.
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.15\linewidth}|p{0.38\linewidth}|p{0.36\linewidth}|}
+\hline\textbf{Use Case} & \textbf{Main Flow} & \textbf{Alternate / Guard}\\\hline\endhead
+Dashboard & Open shell; load prices, candles, signals and risk. & Missing provider: ``unavailable'' with reason and automatic retry; no sample state.\\\hline
+Account & Register/login $\rightarrow$ JWT $\rightarrow$ persist token $\rightarrow$ restore \texttt{/me}. & Expired/invalid token is discarded; protected routes require authentication.\\\hline
+Alert & Store threshold $\rightarrow$ watcher checks live ticker $\rightarrow$ notification (and Telegram if set). & No firing without a live price; triggered alert is disabled until rearmed.\\\hline
+Paper Trade & Tracked symbol and live price $\rightarrow$ fee-aware fill $\rightarrow$ update account/history. & Reject unavailable prices, amounts under \$1, insufficient cash or absent position.\\\hline
+Sage & Specialists analyse live context; retrieve documents $\rightarrow$ Claude/Groq or rules $\rightarrow$ sources. & Unverifiable numbers or no LLM key: rules answer.\\\hline
+Liquidations & Choose window and coin $\rightarrow$ stats, timeline, spikes, context $\rightarrow$ explanation. & Stream down: status shows disconnection; gaps are reported.\\\hline
+\caption{Use-case narratives.}\label{tab:narratives}
+\end{longtable}}
+
+% =====================================================================
+\section{Architecture and Design}
+\subsection{Architectural Style}
+The system follows a client-server and layered architecture. Flutter manages presentation and local state and reads live prices directly from Binance. FastAPI exposes JSON routers, Pydantic validates contracts, services perform domain operations, SQLAlchemy persists records, and provider adapters retrieve external data. The Predictor loads model artifacts for inference, while a separate command-line pipeline handles model training and evaluation. Five background tasks run inside the backend process.
+\diagram{diagrams/01_system_architecture.png}{Major application layers, dependencies and data stores.}{fig:arch}{\linewidth}
+
+\subsection{Backend Request Lifecycle}
+The backend request lifecycle consists of the following stages:
+\begin{itemize}
+\item Startup creates ORM tables, starts the alert (every 30 s), news (every 15 min), listings (every 6 h), liquidation-stream and liquidation-store tasks, and logs model readiness.
+\item A request enters a router; FastAPI dependencies supply a database session and, if required, an authenticated user.
+\item Schemas validate input; handlers call services and return JSON responses.
+\item Services fetch, cache and transform provider data, call Predictor/risk calculations and persist ORM changes.
+\item If a signal cannot be computed from real inputs, a \texttt{SignalUnavailable} handler returns HTTP 503 with the missing inputs.
+\item Shutdown cancels the background tasks and closes shared Binance clients.
+\end{itemize}
+
+\subsection{Frontend Structure}
+The frontend is organized into folders according to their responsibilities.
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{|p{0.22\linewidth}|X|}\hline
+\textbf{Folder / Entry} & \textbf{Responsibility}\\\hline
+\texttt{main.dart} & Root CryptoSenseApp; MarketService and AppState lifecycle; opens the shell directly (sign-in is a dialog).\\\hline
+\texttt{screens/} & Overview, portfolio, alerts, limits, news, whale watch, new listings, liquidations, academy, Risk Copilot chat and paper trading.\\\hline
+\texttt{services/} & REST bridge, app state/scope, market stream, coin list, paper service, indicators, Sage helpers and guide content.\\\hline
+\texttt{models/} & Typed ticker, candle, signal, holding, alert, risk, news, whale, listing and liquidation models.\\\hline
+\texttt{widgets/} & Reusable charts, cards, labels, controls, panels, dialogs and the tour.\\\hline
+\texttt{theme/} + \texttt{utils/} & Theme tokens and formatting helpers.\\\hline
+\end{tabularx}
+\caption{Frontend folder responsibilities.}\label{tab:frontend}
+\end{table}
+
+\subsection{Application Activity}
+\diagram{diagrams/03_activity_diagram.png}{Main application flow; unavailable data is reported and retried.}{fig:activity}{0.85\linewidth}
+
+\subsection{Signal-Generation Flowchart}
+\diagram{diagrams/13_signal_flowchart.png}{Signal generation: missing inputs produce ``unavailable'', never demo data.}{fig:signalflow}{0.62\linewidth}
+
+\subsection{Principal UML Class Diagram}
+\diagram{diagrams/04_class_diagram.png}{Main entities and service abstractions.}{fig:class}{\linewidth}
+
+\subsection{Authentication Sequence}
+\diagram{diagrams/05_seq_authentication.png}{Registration/login returns a signed token to the client.}{fig:seqauth}{\linewidth}
+
+\subsection{Signal and Risk Sequence}
+\diagram{diagrams/06_seq_signal_risk.png}{Signal and risk score request.}{fig:seqsignal}{\linewidth}
+
+\subsection{Risk Copilot Chat Sequence}
+\diagram{diagrams/07_seq_chat.png}{Sage answer with six specialists and a grounded language model.}{fig:seqchat}{\linewidth}
+
+\subsection{Liquidation Sequence}
+\diagram{diagrams/08_seq_liquidation.png}{Liquidation stream, storage, statistics and alerts.}{fig:seqliq}{\linewidth}
+
+\subsection{Paper-Trading Activity}
+\diagram{diagrams/14_paper_trading_activity.png}{Live price is required; the practice fee is 0.1\%.}{fig:paper}{0.6\linewidth}
+
+\subsection{State Diagrams}
+\diagram{diagrams/09_state_diagrams.png}{Stream connection, alert lifecycle and signal availability states.}{fig:states}{\linewidth}
+
+\subsection{Deployment Diagram}
+\diagram{diagrams/12_deployment_diagram.png}{Local or hosted deployment; keep keys server-side.}{fig:deploy}{\linewidth}
+
+% =====================================================================
+\section{Data Model and Persistence}
+SQLAlchemy models in \texttt{backend/app/models.py} and \texttt{paper\_models.py} define persistent entities. Startup invokes \texttt{Base.metadata.create\_all}; the source does not include a separate migration history.
+\diagram{diagrams/10_er_diagram.png}{Logical ERD from declared ORM keys and relations.}{fig:erd}{\linewidth}
+
+\subsection{Entity Descriptions}
+The principal database entities and their purposes are described below.
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.24\linewidth}|p{0.66\linewidth}|}
+\hline\textbf{Entity} & \textbf{Fields and Purpose}\\\hline\endhead
+User / users & PK id; name, unique indexed email, password\_hash, created\_at.\\\hline
+Holding / holdings & PK id; FK user\_id; symbol, amount, avg\_buy, optional stop/take percentages, limit\_fired.\\\hline
+Alert / alerts & PK id; FK user\_id; symbol, kind, value, active, triggered\_at, created\_at.\\\hline
+Notification / notifications & PK id; FK user\_id; message, kind, seen, created\_at.\\\hline
+Listing / listings & PK symbol; base, listed\_at, first/last price, volume, volatility, risk, updated\_at.\\\hline
+RiskPrediction / risk\_predictions & PK id; symbol, risk\_pct, level, model, created\_at; history by coin/time.\\\hline
+LiquidationEvent / liquidation\_events \textit{(new)} & PK id; unique event\_key; symbol, side, position (long/short), quantity, filled quantity, price, average price, USD value, usd\_valid, event time, 5-minute bucket, received time.\\\hline
+PaperAccount & PK id; unique FK user\_id; cash\_usd, starting\_cash, created\_at.\\\hline
+PaperPosition & PK id; FK account\_id; symbol, amount, avg\_price; unique account+symbol.\\\hline
+PaperTrade & PK id; FK account\_id; side, amount, price, gross USD, fee, realized P\&L, risk snapshot.\\\hline
+\caption{Database entities.}\label{tab:entities}
+\end{longtable}}
+
+\subsection{Relationship and Lifecycle Rules}
+The main entity relationships and lifecycle rules are as follows:
+\begin{itemize}
+\item User 1--many holdings, alerts and notifications; declared ORM cascades apply.
+\item User 1--0/1 paper account; one account has many positions and trades.
+\item PaperPosition has a unique account\_id + symbol constraint.
+\item LiquidationEvent rows are de-duplicated by event\_key and kept for 7 days by default (\texttt{LIQUIDATION\_RETENTION\_DAYS}).
+\item Listing uses the exchange symbol as primary key; risk history uses generated row IDs.
+\item User and trade data are durable; most market results are fetched, cached or stored as model/JSON artifacts.
+\end{itemize}
+
+% =====================================================================
+\section{Module and Class Documentation}
+Principal responsibilities are summarized in this section. Appendix B catalogs Python classes, functions and methods with signatures and source lines. Appendix C indexes Dart classes and detected members.
+
+\subsection{Backend Core Classes}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.34\linewidth}|p{0.56\linewidth}|}
+\hline\textbf{Class / Module} & \textbf{Responsibilities and Key Methods}\\\hline\endhead
+Settings & Pydantic environment settings; \texttt{symbol\_list}, \texttt{quiver\_ticker\_list} and \texttt{cors\_list} parse configuration.\\\hline
+Base / get\_db & Declarative ORM base and request-scoped session generator; closes the session in finally.\\\hline
+User, Holding, Alert, Notification, Listing, RiskPrediction, LiquidationEvent & Core relational records and user relationships/cascades.\\\hline
+PaperAccount, PaperPosition, PaperTrade & Practice cash, open position and trade history records.\\\hline
+Pydantic schemas & Request/response contracts, field bounds, email format and bcrypt byte-length validation.\\\hline
+Predictor & \texttt{reload()} loads model artifacts; \texttt{predict()} blends probabilities weighted by validation macro-F1 and turns directional calls below 0.55 confidence into neutral.\\\hline
+SignalUnavailable & Raised when a signal cannot be computed from real inputs; carries the missing inputs.\\\hline
+Six specialist agents & MarketIntelligence, Derivatives, OnChain, SentimentNews, RiskAssessment and Explanation agents produce inspectable reports.\\\hline
+KnowledgeBase / \_Sparse & TF-IDF search over static, news and signal documents, saved as JSON.\\\hline
+Params (liquidation\_anomaly) & Spike-detection settings read from the environment.\\\hline
+TradeError, NewsUnavailable & Domain errors for rejected practice trades and unavailable news.\\\hline
+\caption{Backend core classes.}\label{tab:coreclasses}
+\end{longtable}}
+
+\subsection{Routers and Service Modules}
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.34\linewidth}|p{0.56\linewidth}|}
+\hline\textbf{Module} & \textbf{Responsibilities}\\\hline\endhead
+auth.py & Register, login, current-user lookup.\\\hline
+market.py / binance.py & Ticker, kline and sentiment endpoints; Binance REST conversion and client helpers.\\\hline
+signals.py / features.py / predictor.py / levels.py & Context collection, 18-feature generation, explanation, ensemble inference and UTC key levels.\\\hline
+risk.py / copilot.py & Seven-factor risk score, levels, portfolio weighting, history, historical analogs and what-if.\\\hline
+portfolio.py / watcher.py / telegram.py & Holding valuation, CRUD/limits, alert/limit checks, notifications and Telegram delivery.\\\hline
+paper.py & 10{,}000 USD initial practice balance, 0.1\% fee, cost-basis calculation and trade history.\\\hline
+discover.py + news / whales / quiver / listings / jev & News and sentiment, whale flow, crypto-linked stock trades, listings and optional Jev news comparison.\\\hline
+liquidations.py + liquidation\_store / stats / anomaly / context / explain / alerts & Liquidation stream, storage, statistics, spike detection, market context, explanations and alerts.\\\hline
+chat.py / agents.py / sage.py / rag.py / explainer.py & Specialist reports, retrieval, language model or rules answer, grounded number check and citations.\\\hline
+ml/train.py & Data download, real-hour filtering, tree training, F1 weighting, evaluation and artifact saving.\\\hline
+\caption{Routers and service modules.}\label{tab:modules}
+\end{longtable}}
+
+\subsection{Frontend Class and State Pattern}
+The frontend follows a shared state and service pattern:
+\begin{itemize}
+\item \textbf{CryptoSenseApp} owns MarketService and AppState lifecycles and opens the Shell.
+\item \textbf{AppScope} exposes shared services through BuildContext extensions.
+\item \textbf{ApiService} maps JSON to Dart types, stores the JWT in SharedPreferences and raises ApiException for HTTP errors.
+\item \textbf{MarketService} reads a real Binance snapshot and the live ticker stream; when Binance is unreachable it reports ``unavailable'' and retries instead of simulating prices.
+\item \textbf{AppState} (ChangeNotifier) manages authentication, holdings, alerts, refreshes, notification polling and guest state.
+\item \textbf{Screens} compose page-level UI; widgets provide reusable charts, cards, badges and controls.
+\end{itemize}
+
+\subsection{Authentication and Authorization}
+Registration normalizes email, checks uniqueness, hashes with bcrypt and returns an HS256 JWT. Schema validation checks password length and bcrypt's 72-byte limit. Tokens expire after seven days by default. \texttt{current\_user} protects endpoints; \texttt{optional\_user} supports optional authentication (for example chat). User-scoped queries are used for portfolio, alerts and paper trading. A strong, stable \texttt{JWT\_SECRET} must be configured in \texttt{.env}; the built-in default is a public placeholder.
+
+% =====================================================================
+\section{AI, Feature Engineering and Risk}
+\subsection{Dataset and Target}
+The deployed models were trained on hourly Binance data for BTC, ETH, BNB, SOL, XRP and ADA over 730 days, with funding and Fear \& Greed context. The training script now defaults to ten years of requested history and keeps only hours for which real funding and Fear \& Greed values exist (no filled-in values). The target is the return after 24 hours: greater than $+2.5\%$ is bullish, less than $-2.5\%$ is bearish, otherwise neutral. This is a classification task, not exact-price regression.
+
+\subsection{Feature Inventory}
+The system uses 18 features grouped into two categories, as shown in Table~\ref{tab:features}.
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{|p{0.18\linewidth}|X|p{0.27\linewidth}|}\hline
+\textbf{Group} & \textbf{Features} & \textbf{Purpose}\\\hline
+Technical (12) & \texttt{ret\_1}, \texttt{ret\_4}, \texttt{ret\_24}, \texttt{rsi\_14}, \texttt{macd\_hist}, \texttt{macd\_cross}, \texttt{bb\_pos}, \texttt{bb\_width}, \texttt{atr\_pct}, \texttt{sma20\_dist}, \texttt{sma50\_dist}, \texttt{vol\_ratio} & Movement, momentum, volatility, trend and volume.\\\hline
+Context (6) & \texttt{taker\_ratio}, \texttt{funding\_rate}, \texttt{fng}, \texttt{fng\_change\_7d}, \texttt{btc\_ret\_24}, \texttt{btc\_sma50\_dist} & Order flow, derivatives, market mood and Bitcoin context.\\\hline
+\end{tabularx}
+\caption{Feature inventory used by CryptoSense.}\label{tab:features}
+\end{table}
+The 20 ``regime'' features of the previous version were removed; the most important features of the deployed XGBoost model are \texttt{atr\_pct} (0.148), \texttt{fng\_change\_7d} (0.092) and \texttt{fng} (0.091).
+
+\subsection{Training and Inference}
+The training and inference process follows these steps:
+\begin{itemize}
+\item Training downloads candles, funding data and Fear \& Greed data from the real providers; there is no synthetic or demo option.
+\item Training and serving share the same feature code. Backward as-of joins avoid using future-known context.
+\item A chronological per-coin split is used: 70\% training, 15\% validation and 15\% testing, with a horizon gap. The recorded rows are 72{,}984, 15{,}414 and 15{,}708.
+\item XGBoost and LightGBM use validation and early stopping, with class balancing. Ensemble weights come from validation macro-F1.
+\item At inference the weighted probabilities give the trend; a bullish or bearish call below 0.55 confidence is shown as neutral.
+\item Models and metrics are saved under \texttt{backend/ml/models}; \texttt{POST /api/signals/reload} loads retrained models without a restart.
+\end{itemize}
+\diagram{diagrams/11_ml_pipeline.png}{Machine learning training and serving pipeline.}{fig:mlpipe}{\linewidth}
+
+\subsection{Recorded Evaluation}
+Table~\ref{tab:eval} presents the recorded results of the deployed models on the test set. ``Confident accuracy'' is the accuracy on predictions whose top probability is at least 0.5, and ``coverage'' is the share of such predictions.
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{0.30\linewidth}|c|c|c|c|}\hline
+\textbf{Model / Result} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Confident acc.} & \textbf{Coverage}\\\hline
+XGBoost & 55.60\% & 0.414 & 78.24\% & 35.07\%\\\hline
+LightGBM & 54.44\% & 0.397 & 65.58\% & 51.73\%\\\hline
+Ensemble & 55.49\% & 0.405 & 72.55\% & 41.91\%\\\hline
+Majority baseline & 71.24\% & 0.277 & -- & --\\\hline
+\end{tabular}
+\caption{Recorded model evaluation results.}\label{tab:eval}
+\end{table}
+The ensemble's macro-F1 is higher than the baseline's, because it recognizes the rarer bullish and bearish periods, but its three-class accuracy is below always-neutral accuracy, since about 70\% of hours are neutral. When the models are confident their accuracy rises to 73--78\%, which is why weak directional calls are shown as neutral. These results do not establish reliable profitable direction forecasting. Model confidence is not a guarantee.
+
+\subsection{Effect of Training History}
+Models trained on two, five and ten years of requested history were compared on the \textit{same} final 100 days (14{,}256 hourly rows), which none of them saw during training.
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{0.26\linewidth}|c|c|c|c|c|}\hline
+\textbf{History} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Log loss} & \textbf{Fall Brier} & \textbf{Fall AUC}\\\hline
+2 years (deployed) & 0.518 & 0.395 & 0.987 & 0.160 & 0.573\\\hline
+5 years & 0.564 & 0.407 & 0.973 & 0.160 & 0.613\\\hline
+10 years requested & 0.597 & 0.407 & 0.924 & 0.152 & 0.608\\\hline
+Always ``neutral'' & 0.687 & -- & -- & -- & --\\\hline
+\end{tabular}
+\caption{Comparison of training histories on the same unseen 100 days.}\label{tab:history}
+\end{table}
+Longer history helps: the ten-year model has the best accuracy, log loss and Brier score. All models remain weak predictors of direction.
+
+\subsection{Calibration and Downside-Risk Experiment}
+On the most recent unseen year (25 October 2025 to 22 November 2026, 53{,}574 rows), twelve additional volatility and calendar features and probability calibration were tested, together with a different target: whether the price \textit{touches} $-2.5\%$ within 24 hours.
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{0.45\linewidth}|c|c|c|c|}\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Log loss} & \textbf{Brier} & \textbf{AUC}\\\hline
+\multicolumn{5}{|l|}{\textit{Direction (3 classes); Brier and AUC for the bearish class}}\\\hline
+Baseline (class frequencies) & 0.689 & 0.867 & 0.146 & 0.500\\\hline
+LightGBM, current features & 0.687 & 0.811 & 0.142 & 0.626\\\hline
+LightGBM + volatility features, calibrated & 0.689 & 0.796 & 0.140 & 0.643\\\hline
+\multicolumn{5}{|l|}{\textit{Downside touch of $-2.5\%$ within 24 hours (base rate 0.354)}}\\\hline
+Baseline (base rate) & 0.646 & 0.671 & 0.239 & 0.500\\\hline
+Logistic regression on ATR only & 0.662 & 0.620 & 0.215 & 0.670\\\hline
+LightGBM + volatility features & 0.668 & 0.598 & 0.207 & 0.689\\\hline
+\end{tabular}
+\caption{Calibration and downside-risk experiment on the unseen year.}\label{tab:experiment}
+\end{table}
+Calibration brings the Brier score for falls to 0.140 (baseline 0.146). Downside risk is more predictable than direction (AUC 0.689), largely because volatility persists. These experimental models are not yet deployed.
+
+\subsection{Transparent Risk Score}
+The \texttt{risk.score\_from} function builds a heuristic score from 0 to 100 using seven visible components:
+\begin{itemize}
+\item Price swings (volatility): 30 points.
+\item Trend: 15 points.
+\item AI model view (bearish probability, shown as a raw model score): 15 points.
+\item Momentum stretch (RSI): 10 points.
+\item Crowded trades (funding): 10 points.
+\item Market mood (Fear \& Greed): 10 points.
+\item Bitcoin trend: 10 points.
+\end{itemize}
+Risk levels are classified as follows:
+\begin{table}[H]\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|c|}\hline
+\textbf{Risk Level} & \textbf{Score Range}\\\hline
+Low & Below 35\\\hline
+Moderate & 35--59\\\hline
+High & 60 and above\\\hline
+\end{tabular}
+\caption{Risk score categories.}\label{tab:risklevels}
+\end{table}
+Portfolio risk is value-weighted among rated holdings. It reports rated share, high-risk share, the largest position and tips. The score is a heuristic measure and is not a probability of loss.
+
+\subsection{Risk Copilot}
+\texttt{GET /api/risk/\{symbol\}/copilot} combines the risk score with the model votes, the stored risk history, historical market analogs (past hours with similar returns, RSI, ATR, trend, band width and volume, and what happened in the following 24 hours) and UTC key levels (previous day, Asia and London sessions, prior week). \texttt{POST /api/risk/\{symbol\}/simulate} recomputes the score with volatility multiplied by 1.0, 1.5 or 2.0.
+
+\subsection{Sage, Specialists and Grounded Explanations}
+For each question six specialists produce deterministic reports from live data: market intelligence, derivatives, on-chain (whales), sentiment and news, risk assessment, and explanation. The KnowledgeBase indexes the Academy, app guide and methodology Markdown documents, recent news and signals with TF-IDF. Sage adds the retrieved material and the specialist reports, then asks Claude (default model \texttt{claude-opus-5-5}); if Claude is not configured or fails, an OpenAI-compatible model (Groq by default); otherwise rules answer. Every number in an AI-written explanation must match a computed fact at the precision written (rounding and K/M/B suffixes allowed); otherwise the AI text is discarded and the rules answer is shown.
+
+\subsection{News Sentiment}
+News comes from RSS feeds and, with a key, CryptoPanic. Sentiment uses VADER with a cryptocurrency lexicon. With a TypeSafe key, \texttt{/api/news/compare} compares Jev verdicts with VADER on current headlines. If no news source responds, the API reports news as unavailable.
+
+% =====================================================================
+\section{Liquidation Intelligence}
+\subsection{Data Source}
+The backend listens to the Binance USD-M futures stream \texttt{!forceOrder@arr}. A forced SELL closes a long position (long liquidation) and a forced BUY closes a short. The USD value is filled quantity times average price, and is marked valid only for stablecoin-margined contracts. Binance sends at most one liquidation per symbol per second, so all figures are \textit{observed stream events}, not exchange-wide totals. The stream reconnects after 300 seconds of silence and gaps are recorded.
+
+\subsection{Statistics and Spike Detection}
+Statistics are available for 5-minute, 15-minute, 1-hour, 4-hour and 24-hour windows and for BTC, ETH, SOL, BNB, XRP or other coins: totals, longs versus shorts, ratio, largest event, most affected coin, zero-filled timelines and history. A spike uses a robust z-score of the last five minutes against a 24-hour baseline of 5-minute buckets:
+\[ z = \frac{x - \operatorname{median}(B)}{\max\left(1.4826 \cdot \operatorname{MAD}(B),\; m/4\right)} \]
+where $m$ is the minimum notable amount (\$250{,}000). A spike needs $z \geq 4$ and $x \geq m$. A burst is at least 15 events for one coin within 60 seconds, and an imbalance shift is a change of at least 35 points in the long share. Alerts have a 30-minute cooldown and can be sent to Telegram.
+
+\subsection{Context and Explanation}
+\texttt{/api/liquidations/context/\{symbol\}} places liquidations next to price, volume, open interest, funding and volatility from Binance futures, and lists scenarios consistent with the evidence, each with supporting and contradicting points. It never claims that liquidations decide future price. \texttt{/api/liquidations/explain} returns a rules-based or grounded AI explanation.
+
+% =====================================================================
+\section{User Interface}
+The following screenshots were taken from the running application with live Binance data.
+\diagram{screens/overview.png}{Overview: Sage's market read, market mood and risk score.}{fig:ui-overview}{\linewidth}
+\diagram{screens/liquidations.png}{Liquidation intelligence dashboard (new).}{fig:ui-liq}{\linewidth}
+\diagram{screens/copilot_answer.png}{Risk Copilot answer with six specialist reports and sources.}{fig:ui-copilot}{\linewidth}
+\diagram{screens/portfolio.png}{Portfolio.}{fig:ui-portfolio}{\linewidth}
+\diagram{screens/alerts.png}{Alerts.}{fig:ui-alerts}{\linewidth}
+\diagram{screens/news.png}{News with sentiment.}{fig:ui-news}{\linewidth}
+\diagram{screens/whales.png}{Whale watch and crypto-linked stock trades; unavailable without provider keys.}{fig:ui-whales}{\linewidth}
+\diagram{screens/listings.png}{New listings rated by risk.}{fig:ui-listings}{\linewidth}
+\diagram{screens/academy.png}{Academy lessons.}{fig:ui-academy}{\linewidth}
+
+% =====================================================================
+\section{REST API Reference}
+Interactive OpenAPI documentation is available at \texttt{/docs}. The route catalog below is extracted from the router declarations and source locations.
+\subsection{API Route Inventory}
+\input{generated/routes_table}
+
+\section{Health and CORS}
+\begin{itemize}
+\item \texttt{GET /} returns the application name, status, documentation path and loaded models; it is also the hosting health check.
+\item CORS is configurable. The current Settings configuration defaults to a wildcard. A narrow origin list should be configured when the application is hosted.
+\end{itemize}
+
+% =====================================================================
+\section{Installation, Configuration and Deployment}
+\subsection{Local Windows Setup}
+The README provides the following local setup instructions:
+\begin{enumerate}
+\item Install the prerequisites: Python 3.11 or newer, the Flutter SDK and Chrome, and add them to PATH.
+\item Run \texttt{SETUP.bat} once (creates the virtual environment and installs \texttt{requirements.txt}).
+\item Copy \texttt{backend/.env.example} to \texttt{backend/.env} and set at least \texttt{JWT\_SECRET}.
+\item Run \texttt{START.bat} to launch the backend and the Flutter web frontend in Chrome.
+\item Open the interactive backend documentation at \texttt{http://127.0.0.1:8000/docs}.
+\item Run \texttt{TRAIN\_AI.bat} to train the models (required before AI signals are available).
+\item Optionally run \texttt{TEST\_TELEGRAM.bat} to check Telegram alert delivery.
+\end{enumerate}
+
+\subsection{Configuration}
+The main configuration variables are presented in Table~\ref{tab:config}.
+{\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|p{0.42\linewidth}|p{0.48\linewidth}|}
+\hline\textbf{Variable / File} & \textbf{Purpose}\\\hline\endhead
+\texttt{DATABASE\_URL} & SQLite default; PostgreSQL supported through psycopg URL handling.\\\hline
+\texttt{JWT\_SECRET} & Stable random production secret; never use the public placeholder.\\\hline
+\texttt{CORS\_ORIGINS} & Comma-separated list of allowed browser origins.\\\hline
+\texttt{ANTHROPIC\_API\_KEY} / \texttt{CLAUDE\_MODEL} / \texttt{CLAUDE\_EFFORT} & Optional Claude answers and explanations (first choice).\\\hline
+\texttt{LLM\_API\_KEY} / \texttt{LLM\_BASE\_URL} / \texttt{LLM\_MODEL} & Optional OpenAI-compatible fallback (Groq by default).\\\hline
+\texttt{CRYPTOPANIC\_KEY} / \texttt{WHALE\_ALERT\_KEY} & Optional news and whale data providers.\\\hline
+\texttt{QUIVER\_API\_KEY} / \texttt{QUIVER\_TICKERS} & Optional crypto-linked stock trades.\\\hline
+\texttt{TYPESAFE\_API\_KEY} & Optional Jev news comparison.\\\hline
+\texttt{TELEGRAM\_BOT\_TOKEN} / \texttt{TELEGRAM\_CHAT\_ID} & Optional Telegram alerts.\\\hline
+\texttt{LIQUIDATION\_ALERT\_USD}, \texttt{LIQ\_SPIKE\_Z}, \texttt{LIQ\_SPIKE\_MIN\_USD}, \texttt{LIQ\_BASELINE\_HOURS}, \texttt{LIQ\_BURST\_EVENTS}, \texttt{LIQ\_IMBALANCE\_SHIFT\_PTS}, \texttt{LIQ\_ALERT\_COOLDOWN\_MINUTES}, \texttt{LIQUIDATION\_RETENTION\_DAYS} & Liquidation alert and spike-detection settings.\\\hline
+\texttt{requirements.txt} & All Python dependencies (the optional \texttt{requirements-ai.txt} was removed).\\\hline
+\caption{Application configuration variables and files.}\label{tab:config}
+\end{longtable}}
+
+\section{Hosted Deployment}
+The hosted deployment process includes the following steps:
+\begin{itemize}
+\item Deploy the backend on Railway using \texttt{backend/railway.toml} (Nixpacks build, \texttt{uvicorn app.main:app}, health check on \texttt{/}). Configure the PostgreSQL URL, JWT secret and frontend CORS origin.
+\item Build static Flutter web files with the production backend URL (\texttt{flutter build web}).
+\item Use HTTPS in the deployment environment.
+\item Provider restrictions cause ``unavailable'' states rather than demo data; live-only features communicate this status.
+\item Use persistent backups, access controls, monitoring, retention policies and database migrations.
+\end{itemize}
+
+% =====================================================================
+\section{Verification, Constraints and Recommendations}
+\subsection{Verification Status}
+\begin{itemize}
+\item The backend test suite was executed: \texttt{python -m unittest discover -s tests} ran \textbf{65 tests, all passed}. The tests cover liquidation parsing, duplicates, windows, spikes and alerts, grounded number checks, the no-fake-data rules, specialists, the chat endpoint, risk copilot, key levels, the database, Telegram and the watcher.
+\item The backend and frontend were run together against live Binance data; the public GET endpoints returned HTTP 200, 94 live liquidation messages were received with none invalid, and a Copilot question was answered in about 2.4 seconds.
+\item \texttt{flutter analyze} reported no errors and \texttt{flutter build web} succeeded. The frontend has no automated widget tests yet (the broken template test was removed).
+\item This documentation was generated from the current source; the appendix catalog was extracted automatically.
+\end{itemize}
+
+\subsection{Known Constraints}
+\begin{itemize}
+\item Direction prediction remains weak: holdout accuracy is below always-neutral accuracy, although macro-F1 and confident accuracy are higher.
+\item The deployed models use two years of history; better ten-year candidate models exist but are not yet deployed.
+\item Liquidations are a sample from one exchange (at most one event per symbol per second).
+\item Whale, crypto-linked stock, language-model and Telegram features require keys; without them they are unavailable.
+\item The default CORS wildcard and the placeholder JWT secret require production configuration.
+\item \texttt{create\_all} is not a migration strategy. SQLite and in-process cache/jobs require care in multi-instance deployment.
+\item Language-model integrations add latency, cost and privacy considerations; the number check prevents invented figures but not every wording error.
+\end{itemize}
+
+\subsection{Recommendations}
+\begin{itemize}
+\item Deploy the ten-year models and calibrated downside-risk models for several horizons.
+\item Add data with new information: options-implied volatility, recorded open interest and order-book depth.
+\item Add Flutter widget tests for navigation and core screens, and API tests with mocked providers.
+\item Use database migrations, a production CORS allowlist, stable secrets, backups and structured monitoring.
+\item Track model drift and calibration in a live forward test; publish class-specific metrics and baselines.
+\item Disclose the chat context sent to external language models.
+\end{itemize}
+
+\section{Conclusion}
+CryptoSense AI is a modular market-observation and learning platform combining Flutter, FastAPI, SQLAlchemy, live market data, interpretable risk factors, an ML ensemble, liquidation intelligence, alerts, simulated trading and a Risk Copilot with grounded, retrieval-assisted answers.
+
+Since the previous version the project gained liquidation intelligence, the Risk Copilot, six specialist analysts, Claude-based grounded explanations, Quiver and Telegram integrations and a tested code base of 65 automated tests, and it lost every demo and fake data path, the untrained GRU model and several unused pages and scripts. Its strengths are its end-to-end structure, explicit temporal evaluation and honest reporting of unavailable data. Its main limitation is that reliable directional superiority over naive baselines is not demonstrated; downside risk is more predictable than direction.
+
+Future work should prioritize deploying the longer-history and calibrated models, new data sources, frontend tests, operational hardening and live forward testing.

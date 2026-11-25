@@ -1,7 +1,7 @@
-"""News, whale transfers and new listings."""
+"""News, whale transfers, liquidations, crypto-linked stock flows and new listings."""
 from fastapi import APIRouter, Query
 
-from ..services import jev
+from ..services import jev, quiver
 from ..services.listings import recent_listings
 from ..services.news import latest_news
 from ..services.whales import latest_whales
@@ -49,8 +49,15 @@ async def whales():
 
 
 @router.get("/liquidations")
-def liquidations(limit: int = Query(100, ge=1, le=500)):
-    return snapshot(limit)
+def liquidations(limit: int = Query(100, ge=1, le=500),
+                 symbol: str | None = Query(None, pattern="^[A-Za-z0-9]{2,20}$")):
+    return snapshot(limit, symbol)
+
+
+@router.get("/quiver")
+async def quiver_smart_money():
+    """Congress + insider trades in crypto-linked US stocks (Quiver Quantitative)."""
+    return await quiver.smart_money()
 
 
 @router.get("/listings")
